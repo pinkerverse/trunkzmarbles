@@ -2,43 +2,39 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#fffaf1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TRUNKZ Marbles">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="description" content="Pick your TRUNKZ head marble, count down and race through pastel obstacles. Mobile-first Reel creator.">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="assets/icon.svg">
-<link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+<meta name="description" content="Pick a TRUNKZ marble and watch it race through three black-and-white marble runs.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
+<link rel="apple-touch-icon" href="./assets/icon.svg">
 <title>TRUNKZ Marbles</title>
 <style>
-*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;background:#282039}
-body{font-family:ui-rounded,'Arial Rounded MT Bold','Trebuchet MS',system-ui,-apple-system,sans-serif;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-main{width:100%;max-width:480px;height:100dvh;margin:0 auto;position:relative;overflow:hidden;background:#fffaf1;box-shadow:0 0 60px #0d041638}
-#scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
-#topControls{position:absolute;top:calc(env(safe-area-inset-top) + 12px);left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;pointer-events:none;opacity:.96}
-#topControls .logotype{background:#fffaf0e8;padding:8px 12px;border:2px solid #302640;border-radius:999px;color:#332642;font-size:11px;font-weight:1000;letter-spacing:.075em;box-shadow:2px 3px 0 #30264030}
-#topControls button{pointer-events:auto}
-#bottomControls{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 12px);left:12px;right:12px;display:flex;align-items:center;justify-content:center;gap:9px;transition:opacity .24s;z-index:3}
-button{font-family:inherit;border:2.5px solid #302640;cursor:pointer;font-weight:1000;touch-action:manipulation}
-button:active{transform:translateY(2px)}.small{border-radius:16px;background:#fff9e9;color:#392d44;height:51px;min-width:52px;padding:0 13px;box-shadow:2px 3px 0 #30264036;font-size:12px}
-#start{flex:1;max-width:240px;min-height:61px;border-radius:20px;background:#a9eccd;color:#302640;font-size:21px;letter-spacing:-.025em;box-shadow:3px 5px 0 #302640}
-#soundToggle{border-radius:16px;background:#fff0cf;width:48px;height:43px;font-size:21px}
-#course{display:none}#racerList{display:none}#speed{display:none}#headline{display:none}#status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-body[data-mode="intro"] #bottomControls,body[data-mode="countdown"] #bottomControls,body[data-mode="racing"] #bottomControls{opacity:0;pointer-events:none}
-body[data-mode="intro"] #topControls,body[data-mode="countdown"] #topControls,body[data-mode="racing"] #topControls{opacity:0;pointer-events:none}
-@media(min-width:650px){main{border-radius:22px;max-height:900px;margin:4vh auto;height:92dvh}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;background:#151515}
+body{font-family:ui-rounded,'Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+main{position:relative;width:100%;max-width:540px;height:100dvh;margin:0 auto;overflow:hidden;background:white}
+#scene{width:100%;height:100%;position:absolute;inset:0;display:block;touch-action:manipulation}
+#controls{position:absolute;bottom:max(5%,calc(env(safe-area-inset-bottom) + 8px));left:10%;width:80%;display:flex;gap:9px;align-items:center;justify-content:center;transition:opacity .18s;z-index:4}
+button{background:white;border:3px solid #111;border-radius:99px;min-height:49px;padding:0 14px;color:#111;font:1000 13px ui-rounded,'Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif;box-shadow:3px 4px 0 #161616;cursor:pointer;touch-action:manipulation}
+button:active{box-shadow:1px 1px 0 #161616;transform:translate(2px,3px)}
+#start{flex:1;max-width:210px;font-size:17px;letter-spacing:-.4px;background:#111;color:white}
+#levelBtn{max-width:125px;min-width:105px}
+body[data-mode="countdown"] #controls, body[data-mode="racing"] #controls{opacity:0;pointer-events:none}
+#status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(min-width:620px){main{height:min(96dvh,960px);margin:2dvh auto;border-radius:18px;box-shadow:0 18px 65px #0009}}
 </style>
-</head><body data-mode="ready">
-<main aria-label="TRUNKZ Marbles mobile game">
-<canvas id="scene" aria-label="Six pastel TRUNKZ head marbles racing toward the finish line"></canvas>
-<div id="topControls"><span class="logotype">✦ TRUNKZ MARBLES</span><button id="soundToggle" aria-label="Mute countdown sounds">🔊</button></div>
-<div id="bottomControls"><button class="small" id="courseBtn" aria-label="Switch race course">ZIGZAG</button><button id="start">▶ START RACE</button><button class="small" id="newRace" aria-label="Shuffle a new race">⟳</button></div>
-<div id="racerList"></div><select id="course"><option value="zigzag">Zigzag</option><option value="chaos">Spinner Chaos</option><option value="drop">Quick Drop</option></select><input id="speed" value="1.3"><input id="headline" value="WHICH TRUNKZ WINS?"><div id="status" role="status" aria-live="polite">Pick your TRUNKZ!</div>
+</head>
+<body data-mode="ready">
+<main aria-label="TRUNKZ Marbles: vertical racing game">
+<canvas id="scene" aria-label="Six colorful TRUNKZ face marbles on a black-and-white marble run"></canvas>
+<div id="controls"><button id="levelBtn" aria-label="Change marble run level">LEVEL 1</button><button id="start" aria-label="Start the marble race">START RACE</button></div>
+<div id="status" role="status" aria-live="polite">Pick a marble, then start the race.</div>
 </main>
-<script>const SPRITE_URLS={pink:'assets/pink.svg',blue:'assets/blue.svg',mint:'assets/mint.svg',gold:'assets/gold.svg',lavender:'assets/lavender.svg',coral:'assets/coral.svg'};</script>
-<script src="game.js"></script>
-<script>if('serviceWorker' in navigator && location.protocol!=='file:'){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script>
-</body></html>
+<script src="./game.js"></script>
+<script>if('serviceWorker'in navigator&&location.protocol!=='file:'){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}</script>
+</body>
+</html>

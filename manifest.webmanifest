@@ -1,19 +1,12 @@
 {
-  "name": "TRUNKZ Marbles",
-  "short_name": "TRUNKZ",
-  "description": "Pick your TRUNKZ marble and race to the finish line",
-  "start_url": "./index.html",
-  "scope": "./",
-  "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#fffaf1",
-  "theme_color": "#fffaf1",
-  "icons": [
-    {
-      "src": "assets/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
-  ]
+  "name":"TRUNKZ Marbles",
+  "short_name":"TRUNKZ",
+  "description":"Pick a marble and race across three black and white marble runs",
+  "start_url":"./index.html",
+  "scope":"./",
+  "display":"standalone",
+  "orientation":"portrait",
+  "background_color":"#ffffff",
+  "theme_color":"#ffffff",
+  "icons":[{"src":"./assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
 }
