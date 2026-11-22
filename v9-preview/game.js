@@ -69,8 +69,8 @@ for(const c of cols){const x=c.x+48;box(c.x,c.y,96,721-c.y,14,c.rank===1?'#111':
 }
 function resize(){const rect=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,3);const w=Math.round(rect.width*d),h=Math.round(rect.height*d);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}}
 function draw(){resize();ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);if(!world){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);text('LOADING MARBLES',255,440,25);return;}if(mode==='results')podium();else{background();course();if(mode==='ready'||mode==='hold')ready();if(mode==='countdown')countdown();if(mode==='racing')raceHeader();}}
-function frame(now){const delta=lastFrame?Math.min((now-lastFrame)/1000,.05):0;lastFrame=now;accumulator+=delta;while(accumulator>=P.DT){update(P.DT);accumulator-=P.DT;}draw();requestAnimationFrame(frame);}
+function frame(now){const delta=lastFrame?Math.min((now-lastFrame)/1000,.05):0;lastFrame=now;accumulator+=delta;while(accumulator>=P.DT){update(P.DT);accumulator-=P.DT;}draw();canvas.dataset.race=JSON.stringify(window.TRUNKZ_DEBUG.state());requestAnimationFrame(frame);}
 $('start').addEventListener('click',start);document.addEventListener('visibilitychange',()=>{lastFrame=0;accumulator=0;});
 window.TRUNKZ_DEBUG={state:()=>({version:9,mode,seed:world?.seed,family:world?.family,raceNumber,chosen,time:world?.time,camera,leadChanges:world?.leadChanges,contacts:world?.contacts,pairContacts:world?.pairContacts,results:world?.finishers.map(p=>p.name),crossings:world?.crossings,positions:world?.marbles.map(p=>({name:p.name,x:p.x,y:p.y,angle:p.angle,contacts:p.contacts}))})};
-Promise.all(sprites.map(im=>im.decode())).then(()=>{newRace();requestAnimationFrame(frame);}).catch(()=>{status('Could not load the marble artwork. Please reopen the app online.');$('start').disabled=true;$('start').textContent='REOPEN TO LOAD';});
+draw();Promise.all(sprites.map(im=>im.decode())).then(()=>{newRace();requestAnimationFrame(frame);}).catch(()=>{status('Could not load the marble artwork. Please reopen the app online.');$('start').disabled=true;$('start').textContent='REOPEN TO LOAD';});
 })();
