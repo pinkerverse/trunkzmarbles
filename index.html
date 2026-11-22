@@ -12,7 +12,7 @@ main{position:relative;width:min(100vw,56.25dvh);aspect-ratio:9/16;background:#f
 #controls{position:absolute;top:77%;left:22%;width:50.5%;height:6.3%;z-index:3}
 #start{height:100%;width:100%;border:0;border-radius:999px;background:#111;color:#fff;font:900 clamp(14px,3.8vw,23px) ui-rounded,'Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif;letter-spacing:.02em;box-shadow:0 4px 0 #aaa;cursor:pointer;touch-action:manipulation;transition:transform .12s,box-shadow .12s}
 #start:active{transform:translateY(3px);box-shadow:0 1px 0 #aaa}button:focus-visible{outline:3px dashed #111;outline-offset:7px}#start:disabled{background:#333;box-shadow:none;cursor:default}
-body[data-mode="countdown"] #controls,body[data-mode="racing"] #controls{visibility:hidden}
+body[data-mode="countdown"] #controls,body[data-mode="racing"] #controls,body[data-mode="catching"] #controls{visibility:hidden}
 #picks{position:absolute;inset:0;pointer-events:none}#picks button{position:absolute;top:26%;width:10.3%;height:7%;padding:0;border:0;background:transparent;border-radius:50%;pointer-events:auto;cursor:pointer;color:transparent}
 body:not([data-mode="ready"]) #picks{visibility:hidden}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 @media(prefers-reduced-motion:reduce){#start{transition:none}}
@@ -21,7 +21,7 @@ body:not([data-mode="ready"]) #picks{visibility:hidden}.sr-only{position:absolut
 <canvas id="scene" role="img" aria-label="Seven original TRUNKZ marbles on a black and white marble run"></canvas>
 <div id="picks" role="group" aria-label="Pick your marble"></div><div id="controls"><button id="start" disabled>LOADING MARBLES</button></div>
 <div id="status" class="sr-only" role="status" aria-live="polite">Loading the original marble artwork.</div></main>
-<script src="./physics.js?v=9"></script><script src="./game.js?v=9"></script>
+<script src="./physics.js?v=10"></script><script src="./game.js?v=10"></script>
 <script>
 if('serviceWorker'in navigator&&location.protocol!=='file:'){
 let hadController=!!navigator.serviceWorker.controller;

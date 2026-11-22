@@ -1,57 +1,70 @@
-# V9 verification record
+# V10 verification record
 
-## Completed automated checks
+## Reference review
 
-- JavaScript syntax: game, physics and service worker.
-- 750 seeded physics races: 250 per course family. All completed before the 25-second test failure threshold. That threshold exists only in testing; the game has no race cutoff.
-- All seven colors won in each family.
-- All finishers crossed from above to below the physical checkered line, within the side boundaries. Finish timestamps were ordered, unique racer IDs were preserved, and results required at least three real finishers.
-- Every marble contacted the track; every race included marble-to-marble interaction. Coordinates, velocity and rotation stayed finite and marbles stayed within course boundaries.
-- 30 complete app lifecycle runs using a headless DOM/Canvas stub: selection, immediate Start feedback, hold, full countdown, racing, real top three, persistent results, replay to a different course family. All three families and seven winning colors covered. This is **not a real browser test**.
-- Offline/cache simulation: both versioned scripts and all seven sprites resolve on the first offline load; navigation falls back to the app shell; other applications' caches and requests are left alone.
-- Seven V8 marble SVG bytes preserved without modification.
+All seven supplied screenshots (IMG_4034.PNG through IMG_4040.PNG) were visually reviewed. The three-second ScreenRecording_11-22-2026 23-20-12_1.mov was opened in QuickTime and reviewed for the large countdown above the queued characters, the sloping start shelf and the stopper release. The reference geometry informed the new peg fields, free-ended rolling ramps and swinging bars. TRUNKZ's original seven marble SVGs and monochrome track style are preserved.
 
-| Course family | Races | Median seconds | Range seconds | Within 8–10 seconds | Mean lead changes |
+## Completed automated verification
+
+- JavaScript syntax checks passed for the game, physics engine and worker.
+- 750 seeded physics races passed: 250 per course family. Every race delivered all seven real finishers before the test-only 40-second failure threshold, and all marbles remained on or above the catching rail during a further two seconds of physical settling. The app itself has no ranking cutoff.
+- Every recorded finisher crossed from above to at/below the checkered plane, in timestamp order, inside the course boundaries. No duplicate finisher IDs were added.
+- Every body remained finite and within the side boundaries. Every marble contacted the course, and all races included marble-to-marble contact.
+- All seven colors won in each course family. First-three ranking stayed unchanged throughout the catch phase.
+- 30 complete application lifecycle tests passed using a DOM/Canvas stub. Covered: selection, fixed queue during the hold/countdown, gate present before GO and absent during racing, catching phase, all seven finishers retained, persistent podium and replay to a new course family. These are not real browser tests.
+- Offline/cache tests passed for the versioned scripts, seven original sprites, navigation fallback and isolation from other apps' caches.
+
+| Family | Races | Third-place median | Third-place range | 14–20 seconds | Mean lead changes |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Switchback | 250 | 9.412 | 7.996–10.975 | 209 | 2.58 |
-| Split Decision | 250 | 8.921 | 7.558–10.283 | 241 | 3.61 |
-| Funnel Club | 250 | 8.258 | 6.871–9.492 | 173 | 4.88 |
+| Switchback Springs | 250 | 15.436 s | 12.545–18.607 s | 211 | 2.65 |
+| Pinball Parade | 250 | 17.188 s | 14.288–19.751 s | 250 | 2.07 |
+| Rolling Rivals | 250 | 19.921 s | 17.740–23.582 s | 132 | 3.79 |
 
-623 of 750 races (83.1%) met the target window. Races are allowed to finish naturally outside that window.
+The collection/settling phase follows the third-place finish and adds time to the overall recording. Longer trailing arrivals are allowed to finish naturally.
 
-## Completed real-browser QA
+During implementation, a starter shelf too close to the side wall and pegboard edge gaps too narrow for a marble were found in simulation and corrected. Sliding release gates were added to gather the field and create more lead changes without scripted outcomes.
 
-The existing V8 production game was inspected and raced before editing. V9 was then tested at an isolated HTTPS path in this same repository before replacing the production root.
+## Completed real-browser verification
 
-20 instrumented randomized races passed across all three course families. Every result required at least three physical finish crossings; the diagnostics verified each crossing had a position above the plane followed by a position at or below it. The runs included track and marble-to-marble contact, six winning colors, 1–10 lead changes per race (mean 3.4), and finish times from 7.925 to 9.821 seconds. 19 of 20 runs finished in the target 8–10 second window. The earlier 750 seeded simulation sample included all seven winning colors in every family.
+20 randomized V10 browser races passed before production deployment, across all three families. The preview used the same physics and game code as production, with relative asset paths adjusted for the isolated directory. The `qa` URL flag exposed read-only race diagnostics in a Canvas data attribute; it did not change simulation or outcomes.
 
-| Run | Seed | Family | Seconds | Podium | Lead changes |
-| --- | ---: | --- | ---: | --- | ---: |
-| 1 | 1904456655 | Switchback | 8.671 | Lilac, Sunny, Blue | 3 |
-| 2 | 1571901907 | Funnel Club | 8.492 | Blue, Lilac, Orange | 9 |
-| 3 | 555970406 | Switchback | 9.317 | Pink, Mint, Red | 1 |
-| 4 | 2021209838 | Split Decision | 8.483 | Red, Lilac, Blue | 2 |
-| 5 | 3698928479 | Switchback | 9.100 | Orange, Pink, Sunny | 1 |
-| 6 | 2475549924 | Split Decision | 8.754 | Pink, Orange, Mint | 4 |
-| 7 | 2062229726 | Funnel Club | 8.487 | Red, Pink, Mint | 10 |
-| 8 | 3651169006 | Switchback | 9.617 | Red, Pink, Blue | 4 |
-| 9 | 3016568128 | Split Decision | 9.387 | Blue, Red, Sunny | 3 |
-| 10 | 190327821 | Switchback | 9.821 | Orange, Pink, Mint | 3 |
-| 11 | 2228418346 | Split Decision | 9.187 | Mint, Sunny, Blue | 2 |
-| 12 | 3808792083 | Switchback | 9.442 | Lilac, Pink, Blue | 2 |
-| 13 | 2300847696 | Split Decision | 8.383 | Pink, Sunny, Red | 1 |
-| 14 | 3646785689 | Switchback | 9.675 | Blue, Red, Pink | 2 |
-| 15 | 3972114445 | Funnel Club | 8.229 | Orange, Sunny, Red | 5 |
-| 16 | 293370173 | Split Decision | 8.504 | Orange, Pink, Blue | 3 |
-| 17 | 670283901 | Switchback | 9.746 | Lilac, Blue, Mint | 2 |
-| 18 | 4190773318 | Split Decision | 9.079 | Lilac, Sunny, Pink | 1 |
-| 19 | 4234731742 | Funnel Club | 7.925 | Orange, Blue, Lilac | 6 |
-| 20 | 939381781 | Split Decision | 9.371 | Red, Orange, Sunny | 4 |
+Checked in the browser:
 
-Visual inspection covered 375×667, 390×844 and 1080×1920 viewports, including the starting platform, selection, immediate queued feedback, countdown, whole-marble rotation, ramp/spinner contact, leader-camera views, visible checkerboard approach and podium/replay separation. The 1080×1920 composition was measured in the DOM; the action button occupies approximately y=1478–1600. No warnings or errors were reported by the preview console after the 20-race run. Replay repeatedly returned to a different family and a fresh starting screen.
+- Fixed sloping queue while the selection hold and countdown ran, and a visible stopper until GO.
+- Large animated numbers above the queue and removal of the stopper on GO; real rolling from the shelf afterward.
+- Physical ramp, peg, spring, moving-gate and pendulum interaction; leader camera and finish approach.
+- Seven actual finish crossings in each race. The first three remained locked throughout collection, and every marble was retained above the catcher at results.
+- Repeated selection, countdown, replay and complete race lifecycles.
+- 375×667, 390×844 and 1080×1920 layouts. Visual checks included the queued start, countdown, GO, race sections, the catcher with seven marbles, and podium/replay separation. A full-page 1080×1920 result was inspected.
+- No warnings or errors were reported by either preview test page after the 20-race run.
 
-An initial black loading flash was corrected by drawing the loading state before decoding the sprites. Preview-only DOM diagnostics did not alter physics and are excluded from the production game.
+All seven colors won. Third-place crossing times ranged from 12.756 to 22.339 seconds. The last marble crossed no later than 29.942 seconds in this browser sample. The collection hold then allowed the final arrival to settle before the podium. Races had 0–10 lead changes (mean 1.75). Faster and slower natural finishes are allowed.
 
-## Device-specific limits
+Exact seeds, families, third-place times, last arrival times, podiums, lead changes and spring hits are retained in [tests/browser-v10.json](tests/browser-v10.json).
 
-These were real browser runs with mobile viewport sizes, not tests on physical iPhone hardware. Actual iOS Home Screen installation, speaker output and offline relaunch should still be checked on the target phone. WebAudio activation, PWA metadata, service worker behavior and offline cache routing were covered by source review and the automated checks described above.
+| Run | Seed | Family | Third place | All seven | Podium | Lead changes |
+| --- | ---: | --- | ---: | ---: | --- | ---: |
+| 1 | 1391183000 | Rolling Rivals | 19.073 s | 23.742 s | BLUE, MINT, SUNNY | 3 |
+| 2 | 1699693908 | Switchback Springs | 16.690 s | 19.858 s | PINK, SUNNY, RED | 0 |
+| 3 | 10007692 | Pinball Parade | 17.919 s | 22.650 s | SUNNY, LILAC, MINT | 2 |
+| 4 | 215946805 | Switchback Springs | 14.971 s | 20.233 s | LILAC, RED, ORANGE | 0 |
+| 5 | 3613936989 | Rolling Rivals | 21.676 s | 29.942 s | MINT, LILAC, SUNNY | 4 |
+| 6 | 2821723630 | Switchback Springs | 12.756 s | 20.567 s | RED, ORANGE, MINT | 0 |
+| 7 | 4171129729 | Rolling Rivals | 18.989 s | 21.192 s | ORANGE, PINK, RED | 3 |
+| 8 | 2764828032 | Switchback Springs | 15.651 s | 18.475 s | LILAC, BLUE, PINK | 10 |
+| 9 | 1273826845 | Rolling Rivals | 22.339 s | 25.679 s | BLUE, SUNNY, MINT | 7 |
+| 10 | 654735100 | Switchback Springs | 15.004 s | 21.942 s | PINK, RED, LILAC | 1 |
+| 11 | 205362266 | Pinball Parade | 17.428 s | 23.746 s | LILAC, ORANGE, SUNNY | 0 |
+| 12 | 1590788012 | Pinball Parade | 16.949 s | 21.429 s | PINK, BLUE, LILAC | 0 |
+| 13 | 2981908354 | Rolling Rivals | 18.734 s | 22.587 s | MINT, BLUE, PINK | 1 |
+| 14 | 2624880131 | Switchback Springs | 12.843 s | 15.675 s | LILAC, ORANGE, PINK | 1 |
+| 15 | 3651650323 | Pinball Parade | 17.617 s | 22.871 s | SUNNY, LILAC, BLUE | 2 |
+| 16 | 3862167852 | Pinball Parade | 16.745 s | 21.358 s | ORANGE, SUNNY, MINT | 0 |
+| 17 | 885325740 | Rolling Rivals | 19.914 s | 23.275 s | MINT, RED, SUNNY | 1 |
+| 18 | 3469064614 | Switchback Springs | 16.337 s | 22.825 s | BLUE, ORANGE, MINT | 0 |
+| 19 | 3238186952 | Rolling Rivals | 19.488 s | 27.012 s | BLUE, LILAC, RED | 0 |
+| 20 | 3903225450 | Switchback Springs | 16.164 s | 17.667 s | ORANGE, LILAC, RED | 0 |
+
+## Physical-device limits
+
+These were real browser runs using mobile and recording viewport sizes. Physical iPhone Home Screen installation, speaker output and offline relaunch remain device-specific checks; worker/cache behavior and audio activation were reviewed and covered by the applicable automated checks above.

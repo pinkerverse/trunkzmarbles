@@ -1,25 +1,24 @@
-# TRUNKZ Marbles · V9 overhaul
+# TRUNKZ Marbles · V10
 
-A lightweight, dependency-free 9:16 marble-race recording tool for iPhone PWA and Instagram Reels. Only `pinkerverse/trunkzmarbles` is in scope.
+A dependency-free 9:16 marble-race recording tool for iPhone PWA and Instagram Reels. Only `pinkerverse/trunkzmarbles` is in scope. The seven original V8 SVG illustrations remain unchanged.
 
-## Experience
+## Race experience
 
-- Seven **unchanged V8 SVG marble designs**: Sunny, Pink, Blue, Lilac, Red, Orange and Mint. The complete illustration rotates through rolling contact.
-- Opens on the actual starting platform. Tap an accessible marble button, then Start Race.
-- Immediate queued feedback, a three-second selection hold, then full one-second 3–2–1 beats and audible GO. Audio unlocks from the start tap.
-- Three course families: Switchback, Split Decision and Funnel Club. Consecutive recordings change family; each course uses bounded geometry variations, shuffled grid positions and rotating gates.
-- White paper, rounded black obstacles and grayscale controls. A fixed 9:16 composition scales without cropping on taller iPhone screens; essential text, podium and action button stay away from Reel edges.
-- Smooth leader camera and a visible physical checkered finish line.
-- Results appear only after three marbles really cross that line. There is no time cutoff, progress-based ranking, teleport recovery or preselected winner. Crossing times are interpolated and sorted to avoid ID/iteration bias.
-- Results persist until Race Again, which returns to a fresh selection screen.
+- All seven marbles line up on a sloping starting shelf behind a visible vertical stopper. The pick-a-marble banner appears above the waiting queue. The chosen marble is selectable through accessible hit targets placed over its actual starting position.
+- Start Race responds immediately, holds the selection for three seconds, then plays large animated 3–2–1 numbers above the queue. The stopper disappears on GO while the shelf stays in place and the marbles genuinely roll off its end.
+- Three longer course families use free-ended ramps, funnels, pegboards, swinging pendulums, seesaws, rotating bars, sliding release gates and bounded spring bumpers. All track elements are black and white. Spring bumpers use concentric markings and a brief monochrome impact ring.
+- Typical third-place finish times are approximately 15–20 seconds; races end naturally outside that range. There is no timer-based ranking, teleport recovery or predetermined winner.
+- A smooth camera follows the leader to a real checkered crossing plane. Finish timestamps are interpolated and ordered by physical crossings.
+- The first three places lock on their crossings. Physics then continues for every marble: all seven cross and collect on the visible physical catching rail below the finish. After they arrive and settle, the podium displays the original top three. Catcher contact cannot change the recorded finish order.
+- Results remain until Race Again returns to a fresh course and starting queue.
 
-## Implementation
+## Technical details
 
-`physics.js` is shared by the production Canvas app and regression tests: fixed 240 Hz integration, iterative circle/segment and circle/circle constraints, conservative restitution, constant gravity, moving-bar surface velocities and rolling friction/spin. No dependencies or network services are required by the game.
+`physics.js` uses fixed 240 Hz integration, iterative circle/segment and circle/circle constraints, conservative restitution, moving-obstacle surface velocities, constant gravity and rolling spin. The complete original marble illustration rotates during the race.
 
-`sw.js` precaches both scripts and all seven original sprites. Offline requests with version query strings match those precached assets; navigation falls back to the app shell. Cache cleanup is limited to this app's prefix. Worker updates reload at an idle screen instead of during a race.
+The responsive composition stays 9:16 without cropping on tall iPhone screens. Essential text, selection, countdown, podium and controls stay within the recording composition. Audio is unlocked by the Start tap.
 
-Deploy the repository root using the existing GitHub Pages setup. Install on iPhone through Safari → Share → Add to Home Screen. Use the iPhone's screen recording feature.
+`sw.js` precaches the app and all seven sprites, handles version-query requests offline and limits cache deletion to this app. V10 uses new script URLs and a new cache version. Worker-driven reloads wait for an idle screen.
 
 ## Verification
 
@@ -34,4 +33,6 @@ node tests/flow.cjs
 node tests/offline.cjs
 ```
 
-See [QA.md](QA.md) for measured simulation/browser results and the remaining physical-device verification limits.
+[QA.md](QA.md) records completed automated/browser checks, reference review and physical-device limits.
+
+Deploy the repository root with the existing GitHub Pages configuration after the recorded browser verification. On iPhone, use Safari → Share → Add to Home Screen and the built-in screen recorder.
