@@ -34,4 +34,4 @@ node tests/flow.cjs
 node tests/offline.cjs
 ```
 
-See [QA.md](QA.md) for measured results and browser verification still required before release.
+See [QA.md](QA.md) for measured simulation/browser results and the remaining physical-device verification limits.

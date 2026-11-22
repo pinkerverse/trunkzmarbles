@@ -72,5 +72,5 @@ function draw(){resize();ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0
 function frame(now){const delta=lastFrame?Math.min((now-lastFrame)/1000,.05):0;lastFrame=now;accumulator+=delta;while(accumulator>=P.DT){update(P.DT);accumulator-=P.DT;}draw();requestAnimationFrame(frame);}
 $('start').addEventListener('click',start);document.addEventListener('visibilitychange',()=>{lastFrame=0;accumulator=0;});
 window.TRUNKZ_DEBUG={state:()=>({version:9,mode,seed:world?.seed,family:world?.family,raceNumber,chosen,time:world?.time,camera,leadChanges:world?.leadChanges,contacts:world?.contacts,pairContacts:world?.pairContacts,results:world?.finishers.map(p=>p.name),crossings:world?.crossings,positions:world?.marbles.map(p=>({name:p.name,x:p.x,y:p.y,angle:p.angle,contacts:p.contacts}))})};
-Promise.all(sprites.map(im=>im.decode())).then(()=>{newRace();requestAnimationFrame(frame);}).catch(()=>{status('Could not load the marble artwork. Please reopen the app online.');$('start').disabled=true;$('start').textContent='REOPEN TO LOAD';});
+draw();Promise.all(sprites.map(im=>im.decode())).then(()=>{newRace();requestAnimationFrame(frame);}).catch(()=>{status('Could not load the marble artwork. Please reopen the app online.');$('start').disabled=true;$('start').textContent='REOPEN TO LOAD';});
 })();
