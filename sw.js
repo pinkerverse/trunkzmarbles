@@ -1,5 +1,5 @@
 // A versioned cache keeps installed PWAs up to date after each deployment.
-const CACHE='trunkz-marbles-tracked-v5';
+const CACHE='trunkz-marbles-startfix-v6';
 const ASSETS=['./','./index.html','./game.js','./manifest.webmanifest','./assets/icon.svg','./assets/pink.svg','./assets/blue.svg','./assets/mint.svg','./assets/gold.svg','./assets/lavender.svg','./assets/coral.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));

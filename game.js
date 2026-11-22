@@ -17,7 +17,7 @@
   const rng=(seed)=>()=>{let t=seed+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};
   let seed=randomSeed(),random=rng(seed),layout=0,chosen=-1,mode='ready';
   let path=[],length=0,rotors=[],funnels=[],bumps=[],forks=[],runners=[],finishers=[];
-  let holdTime=3,countdown=3.75,raceTime=0,camera=0,resultsTime=0;
+  let holdTime=3,countdown=3.1,raceTime=0,camera=0,resultsTime=0;
   let baseSpeed=300,lastFrame=0,accumulator=0,lastBeat='',audioCtx=null,playedVictory=false;
   const randomRange=(lo,hi)=>lo+(hi-lo)*random();
   function status(text){$('status').textContent=text;}
@@ -81,7 +81,7 @@
     });
     // Median racer reaches the actual finish around 8–10 seconds after GO.
     baseSpeed=(length-170)/8.45;
-    finishers=[];raceTime=0;countdown=3.75;holdTime=3;lastBeat='';playedVictory=false;
+    finishers=[];raceTime=0;countdown=3.1;holdTime=3;lastBeat='';playedVictory=false;
     resultsTime=0;camera=0;mode='ready';chosen=-1;accumulator=0;
     $('start').textContent='START RACE';status('Pick your favorite TRUNKZ marble.');
   }
@@ -99,8 +99,9 @@
   function begin(){
     if(mode==='results'){seed=randomSeed();buildCourse();}
     if(mode!=='ready')return;
-    audioStart();mode='hold';holdTime=3;countdown=3.75;lastBeat='';
-    status('Choose your marble! The countdown starts in three seconds.');
+    audioStart();mode='hold';holdTime=3;countdown=3.1;lastBeat='';
+    document.body.dataset.mode='hold'; // Immediately acknowledge Start.
+    status('Race queued! Starting in three seconds.');
   }
   function updateRace(dt){
     raceTime+=dt;
@@ -138,7 +139,7 @@
   }
   function update(dt){
     if(mode==='hold'){
-      holdTime-=dt;if(holdTime<=0){mode='countdown';countdown=3.75;lastBeat='';}
+      holdTime-=dt;if(holdTime<=0){mode='countdown';countdown=3.1;lastBeat='';}
     }else if(mode==='countdown'){
       countdown-=dt;const k=countdown>3?'3':countdown>2?'2':countdown>1?'1':'GO';
       if(lastBeat!==k){lastBeat=k;if(k==='GO'){beep(670,.16);beep(880,.23,.13);}else beep(325+(3-Number(k))*128,.16);}
@@ -227,6 +228,12 @@
     rounded(159,693,222,42,22,'#fff','#111',2);
     text('6 MARBLES  ·  1 WINNER',270,714,16);
   }
+  function drawStarting(){
+    // Keep PICK A MARBLE visible, while showing that Start was accepted.
+    rounded(152,770,236,75,21,'#fff','#111',4);
+    text('STARTING IN ' + Math.max(1,Math.ceil(holdTime)),270,806,27);
+    text('GET READY!',270,857,15,'#111');
+  }
   function drawCountdown(){
     rounded(172,390,196,186,29,'#fff','#111',4);
     const t=countdown>3?'3':countdown>2?'2':countdown>1?'1':'GO!';
@@ -266,6 +273,7 @@
     ctx.setTransform(scale,0,0,scale,0,offset*scale);ctx.fillStyle='#fff';ctx.fillRect(0,-offset,W,viewH);
     background();if(mode==='results'){drawResults();}else{
       drawCourse();if(mode==='ready'||mode==='hold')drawReady();
+      if(mode==='hold')drawStarting();
       if(mode==='countdown')drawCountdown();if(mode==='racing')drawRaceHeader();
     }
     ctx.setTransform(1,0,0,1,0,0);
