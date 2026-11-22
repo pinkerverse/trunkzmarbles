@@ -1,310 +1,301 @@
 'use strict';
 (() => {
-  // Native canvas, local SVGs, and WebAudio only. No external libraries.
-  const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d',{alpha:false});
-  const W=540,H=960,GROUND=2035,HEIGHT=2230,R=24.5;
-  const colorNames=['PINK','BLUE','MINT','SUNNY','LILAC','CORAL'];
+  // TRUNKZ Marbles: native Canvas, SVG character heads, and optional WebAudio.
+  // Race outcomes are produced by movement along continuous, visible ramps;
+  // no teleporting, arbitrary 8-second cutoff, or edge-to-edge gravity drops.
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d', {alpha:false});
+  const W=540, H=960, FINISH_Y=2020, WORLD_HEIGHT=2250, R=25;
   const keys=['pink','blue','mint','gold','lavender','coral'];
+  const names=['PINK','BLUE','MINT','SUNNY','LILAC','CORAL'];
   const colors=['#ff8bfa','#78b7fb','#7ed6a3','#ffc966','#b9a2f4','#ff9789'];
-  const sprites=keys.map(key=>{const im=new Image();im.src=`./assets/${key}.svg`;return im;});
+  const sprites=keys.map(key=>{const img=new Image();img.src=`./assets/${key}.svg`;return img;});
   const $=id=>document.getElementById(id);
-  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-  const rand=seed=>()=>{let t=seed+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};
-  const modes=['ZIGZAG','SPLIT PATHS','FUNNEL FRENZY'];
-  const startXs=[92,157,222,287,352,417];
-  let seed=Math.floor(Math.random()*1e9),random=rand(seed),level=0,chosen=-1,mode='ready';
-  let rails=[],rotors=[],bumpers=[],funnels=[],runners=[],finishers=[],camera=0;
-  let raceTime=0,countdown=3.88,lastBeat='',resultsTime=0,lastFrame=0,accumulator=0;
-  let audioCtx=null,playedVictory=false;
-  const rando=(a,b)=>a+(b-a)*random();
-  function status(s){$('status').textContent=s;}
-  function rail(x1,y1,x2,y2,w=12,kind='rail'){
-    // Each free end stops well inside the wall so marbles cannot lodge against it.
-    if(kind!=='funnel'){x1=clamp(x1,92,421);x2=clamp(x2,92,421);}
-    rails.push({x1,y1,x2,y2,thickness:w,kind});
+  const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
+  const mix=(a,b,t)=>a+(b-a)*t;
+  const randomSeed=()=>Math.floor(Math.random()*2147483647);
+  const rng=(seed)=>()=>{let t=seed+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};
+  let seed=randomSeed(),random=rng(seed),layout=0,chosen=-1,mode='ready';
+  let path=[],length=0,rotors=[],funnels=[],bumps=[],forks=[],runners=[],finishers=[];
+  let holdTime=3,countdown=3.75,raceTime=0,camera=0,resultsTime=0;
+  let baseSpeed=300,lastFrame=0,accumulator=0,lastBeat='',audioCtx=null,playedVictory=false;
+  const randomRange=(lo,hi)=>lo+(hi-lo)*random();
+  function status(text){$('status').textContent=text;}
+  const layouts=[
+    [[86,310],[450,388],[108,608],[432,824],[119,1055],[434,1281],[108,1515],[433,1736],[270,FINISH_Y]],
+    [[86,310],[449,387],[135,606],[396,829],[92,1046],[446,1278],[148,1505],[418,1740],[270,FINISH_Y]],
+    [[86,310],[452,390],[122,626],[419,851],[134,1065],[447,1291],[91,1502],[413,1732],[270,FINISH_Y]]
+  ];
+  function point(s){
+    const d=clamp(s,0,length);
+    for(let i=0;i<path.length-1;i++){
+      const a=path[i],b=path[i+1];
+      if(d<=b.s||i===path.length-2){
+        const t=clamp((d-a.s)/(b.s-a.s),0,1);
+        const dx=(b.x-a.x)/(b.s-a.s),dy=(b.y-a.y)/(b.s-a.s);
+        return {x:mix(a.x,b.x,t),y:mix(a.y,b.y,t),nx:-dy,ny:dx,angle:Math.atan2(b.y-a.y,b.x-a.x)};
+      }
+    }
+    return {x:270,y:FINISH_Y,nx:0,ny:1,angle:0};
   }
-  function spinner(x,y,length=140,speed=2.5,phase=0){rotors.push({x,y,l:length,s:speed,a:phase,thickness:15});}
-  function bump(x,y,r=18){bumpers.push({x,y,r});}
-  function funnel(x,y,spread=190,gap=90,drop=96){
-    const j=gap/2;
-    const obj={x,y,spread,gap,drop}; funnels.push(obj);
-    rail(x-spread,y,x-j,y+drop,12,'funnel');
-    rail(x+spread,y,x+j,y+drop,12,'funnel');
-    bump(x-j,y+drop-3,8); bump(x+j,y+drop-3,8);
+  function forkOffset(p,s){
+    let shift=0;
+    for(let j=0;j<forks.length;j++){
+      const f=forks[j];
+      if(s<f.from||s>f.to)continue;
+      const t=(s-f.from)/(f.to-f.from);
+      shift+=p.lanes[j]*f.spread*Math.sin(Math.PI*t)**2;
+    }
+    return shift;
+  }
+  function runnerPosition(p){
+    const loc=point(p.s);
+    const offset=forkOffset(p,p.s)+Math.sin(raceTime*4+p.id*2)*1.5;
+    return {x:loc.x+loc.nx*offset,y:loc.y+loc.ny*offset,angle:loc.angle};
   }
   function buildCourse(){
-    rails=[];rotors=[];bumpers=[];funnels=[];finishers=[];
-    random=rand(seed+level*7011);
-    // Shared departure shelf: the start screen IS the first stretch of track.
-    rail(92,315,418,389,14,'start');
-    if(level===0){
-      rail(166,518,508,470); rail(31,710,366,787);
-      funnel(270,840,183,86,100);
-      rail(166,1115,506,1038); rail(34,1280,365,1360);
-      funnel(265,1445,189,80,105);
-      rail(178,1742,505,1655); rail(33,1868,369,1932);
-      [[282,570,142,3.1],[256,1016,166,-2.6],[284,1260,148,3.5],[255,1605,168,-2.9],[270,1902,124,3.2]].forEach(v=>spinner(...v));
-      [[84,622],[432,690],[103,1190],[435,1505],[100,1820]].forEach(v=>bump(...v,19));
-    }else if(level===1){
-      // Multiple actual forks, with barriers that reunite the two sides.
-      rail(33,508,244,583);rail(296,583,508,508);
-      rail(270,600,110,760);rail(270,600,431,760);
-      rail(31,833,239,895);rail(303,895,508,833);
-      funnel(270,990,199,98,105);
-      rail(40,1240,244,1320);rail(300,1320,500,1240);
-      rail(270,1320,92,1498);rail(270,1320,451,1498);
-      rail(37,1590,247,1660);rail(293,1660,507,1590);
-      funnel(270,1740,195,78,99);
-      [[269,470,156,-3.4],[270,775,146,3.1],[260,1164,160,-3.2],[288,1435,175,3.5],[267,1840,130,-3.5]].forEach(v=>spinner(...v));
-      [[70,900],[462,908],[130,1150],[407,1150],[82,1572],[465,1570]].forEach(v=>bump(...v,18));
-    }else{
-      // Alternating side-exit funnels and staggered spinning gates.
-      funnel(250,500,214,92,114);
-      rail(37,757,210,802);rail(331,802,499,744);
-      funnel(322,865,163,86,105);
-      rail(38,1170,210,1220);rail(330,1220,506,1150);
-      funnel(220,1310,171,82,118);
-      rail(37,1590,210,1643);rail(330,1643,506,1565);
-      funnel(294,1765,190,86,95);
-      [[272,698,172,3.8],[250,1020,166,-3.7],[300,1239,174,4],[248,1508,164,-3.7],[280,1950,152,4.1]].forEach(v=>spinner(...v));
-      [[80,728],[460,735],[105,1085],[435,1085],[84,1535],[455,1730]].forEach(v=>bump(...v,18));
-    }
-    // Subtle deterministic microvariations create race reshuffles without altering the three layouts.
-    for(let i=1;i<rails.length;i++) if(rails[i].kind==='rail') {const j=rando(-9,9);rails[i].y1+=j;rails[i].y2+=j;}
-    for(const s of rotors){s.a=rando(-1,1);s.x+=rando(-13,13);s.s*=rando(.92,1.08);}
-    for(const b of bumpers){b.x+=rando(-9,9);}
-    let places=[...startXs];for(let i=places.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[places[i],places[j]]=[places[j],places[i]];}
-    runners=places.map((x,i)=>({id:i,x:x+rando(-3,3),y:275+rando(-2,2),vx:rando(-13,13),vy:0,r:R,angle:0,spin:0,finished:false,finishedAt:null,progress:275,stuck:0,lastY:275,name:colorNames[i]}));
-    camera=0;raceTime=0;countdown=3.88;lastBeat='';resultsTime=0;mode='ready';playedVictory=false;accumulator=0;
-    $('levelBtn').textContent=`LEVEL ${level+1}`;$('start').textContent='START RACE';
-    status(`Pick a marble. Level ${level+1}: ${modes[level]}.`);
+    random=rng(seed);layout=Math.floor(random()*3);
+    const pts=layouts[layout].map(([x,y],i)=>({x:i===0||i===1||i===8?x:clamp(x+randomRange(-24,24),85,453),y:i===0||i===8?y:y+randomRange(-15,15),s:0}));
+    for(let i=1;i<pts.length;i++)pts[i].s=pts[i-1].s+Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);
+    path=pts;length=pts[pts.length-1].s;
+    // Forks and funnels are distributed across the actual course, not drawn as a backdrop.
+    forks=[{from:pts[2].s+50,to:pts[3].s-60,spread:28+randomRange(0,10)},
+           {from:pts[5].s+48,to:pts[6].s-60,spread:25+randomRange(0,11)}];
+    const f1=pts[3],f2=pts[6];
+    funnels=[{s:f1.s,x:f1.x,y:f1.y-30,spread:86}, {s:f2.s,x:f2.x,y:f2.y-30,spread:79}];
+    rotors=[{s:pts[2].s-40,x:0,y:0,len:115,a:randomRange(0,6.28),speed:randomRange(2.1,2.9)},
+            {s:pts[4].s+45,x:0,y:0,len:132,a:randomRange(0,6.28),speed:-randomRange(2.2,3.0)},
+            {s:pts[6].s-85,x:0,y:0,len:112,a:randomRange(0,6.28),speed:randomRange(2.1,3.0)}];
+    for(const r of rotors){const p=point(r.s);r.x=p.x;r.y=p.y;}
+    bumps=[pts[2],pts[5]].map((p,i)=>({x:clamp(p.x+(i===0?40:-40),70,480),y:p.y-60,r:13}));
+    let shuffled=[0,1,2,3,4,5];
+    for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+    runners=shuffled.map((id,slot)=>{
+      const s=30+slot*59;
+      const p={id,name:names[id],s,speed:0,finished:false,finishedAt:null,spin:0,
+        lanes:[random()<.5?-1:1,random()<.5?-1:1],
+        gateFactors:rotors.map(()=>randomRange(.34,.89)),
+        funnelFactors:funnels.map(()=>randomRange(.47,.92)),
+        character:randomRange(-.12,.12),phase:randomRange(0,6.28)};
+      const loc=runnerPosition(p);p.x=loc.x;p.y=loc.y;return p;
+    });
+    // Median racer reaches the actual finish around 8–10 seconds after GO.
+    baseSpeed=(length-170)/8.45;
+    finishers=[];raceTime=0;countdown=3.75;holdTime=3;lastBeat='';playedVictory=false;
+    resultsTime=0;camera=0;mode='ready';chosen=-1;accumulator=0;
+    $('start').textContent='START RACE';status('Pick your favorite TRUNKZ marble.');
   }
-  function beep(freq=440,length=.16,offset=0,type='triangle',volume=.075){
-    try{if(!audioCtx)return;const t=audioCtx.currentTime+offset;
-      const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;
-      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(volume,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+length);
-      o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+length+.02);
-    }catch(_){/* audio optional */}
+  function beep(f=440,seconds=.14,offset=0,volume=.065){
+    if(!audioCtx)return;
+    try{const t=audioCtx.currentTime+offset,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);
+      g.gain.exponentialRampToValueAtTime(volume,t+.012);
+      g.gain.exponentialRampToValueAtTime(.0001,t+seconds);
+      o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+seconds+.02);
+    }catch(_){/* sound is optional */}
   }
-  function unlockAudio(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume().catch(()=>{});}catch(_){}}
-  function countBeep(k){if(k==='GO'){beep(650,.15);beep(900,.28,.12)}else beep(335+(3-Number(k))*125,.16)}
-  function victory(){if(playedVictory)return;playedVictory=true;[[523,0],[659,.1],[784,.21],[1047,.34]].forEach(([n,t])=>beep(n,.2,t));}
-  function begin(){if(mode!=='ready'&&mode!=='results')return; if(mode==='results'){seed=Math.floor(Math.random()*1e9);buildCourse();}
-    unlockAudio(); mode='countdown';countdown=3.88;lastBeat='';camera=0;
-    status('3, 2, 1, GO!');}
-  function lineCollision(p,s,omega=0){
-    const dx=s.x2-s.x1,dy=s.y2-s.y1;const length=dx*dx+dy*dy;if(length<1)return false;
-    const t=clamp(((p.x-s.x1)*dx+(p.y-s.y1)*dy)/length,0,1),qx=s.x1+dx*t,qy=s.y1+dy*t;
-    const a=p.x-qx,b=p.y-qy,dist=Math.hypot(a,b)||.001,depth=p.r+s.thickness*.5-dist;
-    if(depth<=0)return false;
-    const nx=a/dist,ny=b/dist;p.x+=nx*(depth+.1);p.y+=ny*(depth+.1);
-    const svx=s.cx===undefined?0:-omega*(qy-s.cy),svy=s.cx===undefined?0:omega*(qx-s.cx);
-    const avx=p.vx-svx,avy=p.vy-svy,app=avx*nx+avy*ny;
-    if(app<0){const e=s.cx===undefined?.19:.68;p.vx-=(1+e)*app*nx;p.vy-=(1+e)*app*ny;
-      const tv=avx*(-ny)+avy*nx,f=s.kind==='funnel'?.035:.018;
-      p.vx+=ny*tv*f;p.vy-=nx*tv*f;
-      if(s.cx!==undefined){p.vx+=svx*.009;p.vy+=svy*.009;}
-    }
-    return true;
+  function audioStart(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume().catch(()=>{});}catch(_){}}
+  function victory(){if(playedVictory)return;playedVictory=true;[[523,0],[659,.10],[784,.20],[1047,.34]].forEach(([f,t])=>beep(f,.2,t));}
+  function begin(){
+    if(mode==='results'){seed=randomSeed();buildCourse();}
+    if(mode!=='ready')return;
+    audioStart();mode='hold';holdTime=3;countdown=3.75;lastBeat='';
+    status('Choose your marble! The countdown starts in three seconds.');
   }
-  function bumpCollision(p,b){
-    const x=p.x-b.x,y=p.y-b.y,d=Math.hypot(x,y)||.01,dep=p.r+b.r-d;if(dep<=0)return;
-    const nx=x/d,ny=y/d;p.x+=nx*(dep+.1);p.y+=ny*(dep+.1);
-    const v=p.vx*nx+p.vy*ny;if(v<0){p.vx-=1.75*v*nx;p.vy-=1.75*v*ny;}
-  }
-  function pairCollision(a,b){
-    if(a.finished||b.finished)return;
-    const x=b.x-a.x,y=b.y-a.y,d=Math.hypot(x,y)||.01,depth=a.r+b.r-d;if(depth<=0)return;
-    const nx=x/d,ny=y/d;a.x-=nx*depth*.5;a.y-=ny*depth*.5;b.x+=nx*depth*.5;b.y+=ny*depth*.5;
-    const v=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-    if(v<0){const j=-(1+.58)*v*.5;a.vx-=j*nx;a.vy-=j*ny;b.vx+=j*nx;b.vy+=j*ny;}
-  }
-  function raceStep(dt){
+  function updateRace(dt){
     raceTime+=dt;
-    const simDt=dt*(level===0?1.18:level===1?1.48:level===2?1.72:1);
-    for(const s of rotors)s.a+=s.s*simDt;
-    // The last third of the short race has a slightly stronger pull toward the finish.
-    const gravity=690+Math.max(0,raceTime-4.7)*145;
+    for(const rotor of rotors)rotor.a+=rotor.speed*dt;
     for(const p of runners){
       if(p.finished)continue;
-      p.vy+=gravity*simDt;
-      p.x+=p.vx*simDt;p.y+=p.vy*simDt;
-      if(p.x<p.r+26){p.x=p.r+26;p.vx=Math.abs(p.vx)*.66;}
-      if(p.x>W-p.r-26){p.x=W-p.r-26;p.vx=-Math.abs(p.vx)*.66;}
-      if(p.y<205){p.y=205;p.vy=Math.abs(p.vy)*.4;}
-      for(const s of rails)if(p.y>=Math.min(s.y1,s.y2)-85&&p.y<=Math.max(s.y1,s.y2)+85)lineCollision(p,s);
-      for(const s of rotors)if(Math.abs(p.y-s.y)<s.l*.65+p.r){
-        const c=Math.cos(s.a),v=Math.sin(s.a);lineCollision(p,{x1:s.x-c*s.l/2,y1:s.y-v*s.l/2,x2:s.x+c*s.l/2,y2:s.y+v*s.l/2,thickness:s.thickness,cx:s.x,cy:s.y,kind:'spinner'},s.s);
+      let multiplier=1+p.character+.075*Math.sin(raceTime*2.2+p.phase)+.035*Math.sin(p.s*.008+p.id*2.1);
+      for(let j=0;j<rotors.length;j++){
+        const distance=Math.abs(p.s-rotors[j].s);
+        if(distance<80){const t=1-distance/80;multiplier*=1-t*(1-p.gateFactors[j]);}
       }
-      for(const b of bumpers)if(Math.abs(p.y-b.y)<p.r+b.r+5)bumpCollision(p,b);
-      p.vx=clamp(p.vx,-900,900);p.vy=clamp(p.vy,-860,1250);
-      p.angle+=p.vx*simDt/p.r*.35;
-      // Keep motion alive around tiny collision deadlocks at a funnel mouth.
-      if(Math.abs(p.y-p.lastY)<1.1)p.stuck+=simDt;else {p.stuck=0;p.lastY=p.y;}
-      if(p.stuck>.7){p.vx+=((p.id%2)?-1:1)*165;p.vy+=155;p.stuck=0;}
-      if(p.y>=GROUND){p.finished=true;p.y=GROUND;p.finishedAt=raceTime;finishers.push(p);if(finishers.length===1)status(`${p.name} reaches the finish first!`);}
+      for(let j=0;j<funnels.length;j++){
+        const distance=Math.abs(p.s-funnels[j].s);
+        if(distance<65){const t=1-distance/65;multiplier*=1-t*(1-p.funnelFactors[j]);}
+      }
+      // A small catch-up effect gives trailing marbles more opportunities to overtake.
+      const lead=Math.max(...runners.filter(b=>!b.finished).map(b=>b.s));
+      if(lead-p.s>115)multiplier*=1.09;
+      const target=clamp(baseSpeed*multiplier,110,baseSpeed*1.24);
+      p.speed+= (target-p.speed)*Math.min(1,dt*8.5);
+      p.s=Math.min(length,p.s+p.speed*dt);
+      const pos=runnerPosition(p);p.x=pos.x;p.y=pos.y;
+      p.spin+=p.speed*dt/100;
+      if(p.s>=length){
+        p.finished=true;p.finishedAt=raceTime;finishers.push(p);
+        if(finishers.length===1)status(`${p.name} crosses the finish line first!`);
+      }
     }
-    for(let i=0;i<runners.length;i++)for(let j=i+1;j<runners.length;j++)pairCollision(runners[i],runners[j]);
-    // Follow the FIRST marble, not the middle of the pack.
-    const leader=Math.max(...runners.map(p=>p.finished?GROUND:p.y));
-    const target=clamp(leader-375,0,HEIGHT-H);
-    camera+=(target-camera)*Math.min(1,dt*7.5);
-    if(finishers.length===6||raceTime>=8.0){
-      // Finish order is physics-based. At the time limit, order remaining racers by progress.
-      const remaining=runners.filter(p=>!p.finished).sort((a,b)=>b.y-a.y||a.id-b.id);
-      finishers.push(...remaining);mode='results';resultsTime=0;victory();
-      status(`${finishers[0].name} wins! ${raceTime.toFixed(1)} seconds. Choose a level or race again.`);
+    const leader=Math.max(...runners.map(p=>p.y));
+    camera+= (clamp(leader-415,0,WORLD_HEIGHT-H)-camera)*Math.min(1,dt*6.5);
+    if(finishers.length>=3){
+      mode='results';resultsTime=0;victory();
+      status(`${finishers[0].name} wins! Three marbles crossed the finish line in ${raceTime.toFixed(1)} seconds.`);
     }
   }
   function update(dt){
-    if(mode==='countdown'){
-      countdown-=dt;
-      const k=countdown>3?'3':countdown>2?'2':countdown>1?'1':'GO';
-      if(lastBeat!==k){lastBeat=k;countBeep(k);}
-      if(countdown<=0){mode='racing';raceTime=0;status('The marbles are racing.');}
-    }else if(mode==='racing')raceStep(dt);
+    if(mode==='hold'){
+      holdTime-=dt;if(holdTime<=0){mode='countdown';countdown=3.75;lastBeat='';}
+    }else if(mode==='countdown'){
+      countdown-=dt;const k=countdown>3?'3':countdown>2?'2':countdown>1?'1':'GO';
+      if(lastBeat!==k){lastBeat=k;if(k==='GO'){beep(670,.16);beep(880,.23,.13);}else beep(325+(3-Number(k))*128,.16);}
+      if(countdown<=0){mode='racing';raceTime=0;status('The race is on!');}
+    }else if(mode==='racing')updateRace(dt);
     else if(mode==='results')resultsTime+=dt;
   }
-  function rounded(x,y,w,h,r,fill,stroke=null,lw=1){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();}}
-  function label(s,x,y,size=20,color='#111',weight=1000,align='center'){
-    ctx.save();ctx.font=`${weight} ${size}px ui-rounded,'Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif`;
-    ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillStyle=color;ctx.fillText(s,x,y);ctx.restore();
+  function rounded(x,y,w,h,r,fill,stroke=null,lw=1){
+    ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();
+    if(stroke){ctx.lineWidth=lw;ctx.strokeStyle=stroke;ctx.stroke();}
   }
-  function marble(i,x,y,d=51,angle=0,selected=false){
+  function text(s,x,y,size=20,color='#111',weight=900){
+    ctx.save();ctx.font=`${weight} ${size}px ui-rounded,'Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=color;ctx.fillText(s,x,y);ctx.restore();
+  }
+  function marble(id,x,y,d=50,angle=0,selected=false){
     const r=d/2;ctx.save();
-    ctx.beginPath();ctx.arc(x+1.4,y+2,r+1,0,Math.PI*2);ctx.fillStyle='#0003';ctx.fill();
-    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=colors[i];ctx.fill();
-    ctx.save();ctx.beginPath();ctx.arc(x,y,r-1,0,7);ctx.clip();
-    const gloss=ctx.createLinearGradient(x-r,y-r,x+r,y+r);
-    gloss.addColorStop(0,'#ffffffd0');gloss.addColorStop(.33,'#ffffff24');gloss.addColorStop(.68,'#ffffff16');gloss.addColorStop(1,'#0000002a');ctx.fillStyle=gloss;ctx.fillRect(x-r,y-r,d,d);
-    // Contrast pocket keeps the exact pastel-colored head distinct from the tinted sphere.
-    ctx.beginPath();ctx.ellipse(x,y+1,r*.90,r*.64,0,0,7);ctx.fillStyle='#fff8';ctx.fill();
-    const im=sprites[i];if(im.complete&&im.naturalWidth){
-      ctx.translate(x,y);ctx.rotate(angle*.3);ctx.drawImage(im,-r*.90,-r*.53,r*1.8,r*1.08);
+    ctx.beginPath();ctx.arc(x+.9,y+1.3,r+.5,0,Math.PI*2);ctx.fillStyle='#0002';ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle=colors[id];ctx.fill();
+    ctx.save();ctx.beginPath();ctx.arc(x,y,r-.5,0,7);ctx.clip();
+    const grad=ctx.createLinearGradient(x-r,y-r,x+r,y+r);
+    grad.addColorStop(0,'#ffffff6e');grad.addColorStop(.5,'#ffffff08');grad.addColorStop(1,'#00000012');
+    ctx.fillStyle=grad;ctx.fillRect(x-r,y-r,d,d);
+    const im=sprites[id];if(im.complete&&im.naturalWidth){
+      ctx.translate(x,y+1);ctx.rotate(angle*.035);
+      // Original supplied head artwork, with its now-restored bold black outline.
+      ctx.drawImage(im,-r*.98,-r*.61,r*1.96,r*1.22);
     }
     ctx.restore();
-    ctx.beginPath();ctx.arc(x,y,r-1,0,7);ctx.lineWidth=Math.max(2,d*.045);ctx.strokeStyle='#111';ctx.stroke();
-    ctx.beginPath();ctx.arc(x-r*.28,y-r*.27,r*.52,-2.7,-1.1);ctx.strokeStyle='#fffd';ctx.lineWidth=Math.max(1.5,d*.032);ctx.stroke();
+    ctx.beginPath();ctx.arc(x,y,r-1,0,7);ctx.strokeStyle='#111';ctx.lineWidth=Math.max(2.4,d*.045);ctx.stroke();
     if(selected){ctx.beginPath();ctx.arc(x,y,r+6,0,7);ctx.strokeStyle='#111';ctx.lineWidth=3.5;ctx.stroke();}
     ctx.restore();
   }
   function background(){
     ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
-    // Drawing paper aesthetic: no color outside the racers.
-    ctx.fillStyle='#f7f7f7';ctx.fillRect(31,0,W-62,H);
-    ctx.fillStyle='#fff';ctx.fillRect(41,0,W-82,H);
-    ctx.strokeStyle='#d5d5d5';ctx.lineWidth=2;ctx.setLineDash([4,17]);
-    ctx.beginPath();ctx.moveTo(28,0);ctx.lineTo(28,H);ctx.moveTo(W-28,0);ctx.lineTo(W-28,H);ctx.stroke();ctx.setLineDash([]);
-    for(let i=0;i<12;i++){
-      const x=60+(i*113)%417,y=(((i*267-camera)%1300)+1300)%1300;
-      ctx.beginPath();ctx.arc(x,y,1.5+(i%3===0?1:0),0,7);ctx.fillStyle='#ddd';ctx.fill();
-    }
+    // Solid black walls: no dashed lines, highlights, or distracting edge decorations.
+    ctx.strokeStyle='#111';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(31,0);ctx.lineTo(31,H);ctx.moveTo(W-31,0);ctx.lineTo(W-31,H);ctx.stroke();
   }
-  function drawRail(s){
-    const {x1,y1,x2,y2}=s;
-    ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1+1);ctx.lineTo(x2,y2+1);ctx.lineWidth=s.kind==='funnel'?19:21;ctx.strokeStyle='#111';ctx.stroke();
-    ctx.beginPath();ctx.moveTo(x1,y1-2);ctx.lineTo(x2,y2-2);ctx.lineWidth=3.4;ctx.strokeStyle='#eee';ctx.stroke();
-    for(const [x,y] of [[x1,y1],[x2,y2]]){ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fillStyle='#e7e7e7';ctx.fill();ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.stroke();}
+  function blackLine(x1,y1,x2,y2,width=12){
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+    ctx.lineWidth=width;ctx.lineCap='round';ctx.strokeStyle='#080808';ctx.stroke();
   }
-  function drawRotor(s){
-    const c=Math.cos(s.a),v=Math.sin(s.a),x1=s.x-c*s.l/2,y1=s.y-v*s.l/2,x2=s.x+c*s.l/2,y2=s.y+v*s.l/2;
-    ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineWidth=24;ctx.strokeStyle='#111';ctx.stroke();
-    ctx.beginPath();ctx.moveTo(x1,y1-1);ctx.lineTo(x2,y2-1);ctx.lineWidth=2.5;ctx.strokeStyle='#bbb';ctx.stroke();
-    ctx.beginPath();ctx.arc(s.x,s.y,12,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#111';ctx.lineWidth=4;ctx.stroke();
-    ctx.beginPath();ctx.arc(s.x,s.y,4.5,0,7);ctx.fillStyle='#111';ctx.fill();
-  }
-  function drawBumper(b){ctx.beginPath();ctx.arc(b.x,b.y,b.r+3,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#111';ctx.lineWidth=4;ctx.stroke();ctx.beginPath();ctx.arc(b.x,b.y,b.r*.5,0,7);ctx.fillStyle='#d0d0d0';ctx.fill();}
-  function courseArt(){
+  function drawCourse(){
     ctx.save();ctx.translate(0,-camera);
-    for(const s of rails)drawRail(s);
-    for(const b of bumpers)drawBumper(b);
-    for(const s of rotors)drawRotor(s);
-    // Small direction arrows at forks give the visual idea of two routes.
-    if(level===1){for(const yy of [640,1368]){
-      ctx.strokeStyle='#999';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(246,yy);ctx.lineTo(208,yy+27);ctx.moveTo(294,yy);ctx.lineTo(332,yy+27);ctx.stroke();
-    }}
-    ctx.fillStyle='#ededed';ctx.fillRect(42,GROUND-12,W-84,56);
-    for(let i=0;i<27;i++)for(let j=0;j<2;j++){
-      ctx.fillStyle=(i+j)%2?'#fff':'#111';ctx.fillRect(42+i*17,GROUND+j*17,17,17);
+    for(let i=0;i<path.length-1;i++)blackLine(path[i].x,path[i].y,path[i+1].x,path[i+1].y,13);
+    // Split/merge lanes create genuine left/right alternatives visually and in motion.
+    for(const f of forks){
+      for(const sign of [-1,1]){
+        ctx.beginPath();
+        for(let i=0;i<=16;i++){
+          const s=mix(f.from,f.to,i/16),pt=point(s),t=(s-f.from)/(f.to-f.from);
+          const off=sign*f.spread*Math.sin(Math.PI*t)**2;
+          const x=pt.x+pt.nx*off,y=pt.y+pt.ny*off;
+          if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        }
+        ctx.strokeStyle='#080808';ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke();
+      }
     }
-    rounded(179,GROUND-90,182,41,16,'#fff','#111',3);label('FINISH',270,GROUND-69,24);
-    for(const p of runners){if(p.finished&&mode==='racing')continue;
-      marble(p.id,p.x,p.y,p.r*2.0,p.angle,(mode==='ready'||mode==='countdown')&&chosen===p.id);
+    for(const f of funnels){
+      blackLine(f.x-f.spread,f.y-82,f.x-23,f.y+48,9);
+      blackLine(f.x+f.spread,f.y-82,f.x+23,f.y+48,9);
     }
+    for(const b of bumps){
+      ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,7);ctx.lineWidth=5;ctx.strokeStyle='#090909';ctx.stroke();
+    }
+    for(const rotor of rotors){
+      const co=Math.cos(rotor.a),si=Math.sin(rotor.a),half=rotor.len/2;
+      blackLine(rotor.x-co*half,rotor.y-si*half,rotor.x+co*half,rotor.y+si*half,15);
+      ctx.beginPath();ctx.arc(rotor.x,rotor.y,6,0,7);ctx.fillStyle='#050505';ctx.fill();
+    }
+    // A physical finish line, not a timer or a progress approximation.
+    ctx.fillStyle='#fff';ctx.fillRect(39,FINISH_Y-6,W-78,45);
+    for(let i=0;i<22;i++)for(let j=0;j<2;j++){
+      ctx.fillStyle=(i+j)%2?'#fff':'#111';ctx.fillRect(42+i*21,FINISH_Y+j*18,21,18);
+    }
+    rounded(193,FINISH_Y-66,154,38,15,'#fff','#111',2.5);text('FINISH',270,FINISH_Y-47,22);
+    for(const p of runners){if(p.finished&&mode==='racing')continue;marble(p.id,p.x,p.y,2*R,p.spin,(mode==='ready'||mode==='hold'||mode==='countdown')&&p.id===chosen);}
     ctx.restore();
   }
   function drawReady(){
-    // There is NO cover: this text sits over the real marble run's starting section.
-    rounded(116,126,308,62,24,'#fff','#111',4);
-    label('PICK A MARBLE',W/2,157,31,'#111');
-    label('TAP YOUR FAVORITE TO BACK IT',W/2,211,15,'#4b4b4b');
-    // Pointers to individual racers make the selection self-explanatory.
-    for(let i=0;i<6;i++){
-      if(chosen===i){ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(runners[i].x,220);ctx.lineTo(runners[i].x,238);ctx.stroke();}
-      label(colorNames[i],runners[i].x,246,11,'#111');
-    }
-    rounded(148,683,244,38,19,'#fff','#111',2);
-    label(`LEVEL ${level+1}  ·  ${modes[level]}`,W/2,702,15);
-    label('3 DIFFERENT TRACKS',W/2,740,12,'#666');
+    rounded(111,117,318,65,24,'#fff','#111',4);
+    text('PICK A MARBLE',270,150,34);
+    text('TAP YOUR FAVORITE TO BACK IT',270,210,16,'#555');
+    for(const p of runners)text(p.name,p.x,p.y-41,11,'#111');
+    rounded(159,693,222,42,22,'#fff','#111',2);
+    text('6 MARBLES  ·  1 WINNER',270,714,16);
   }
   function drawCountdown(){
-    const k=countdown>3?'3':countdown>2?'2':countdown>1?'1':'GO!';
-    rounded(177,395,186,186,29,'#111');
-    rounded(171,390,186,186,29,'#fff','#111',4);
-    label(k,W/2,478,k==='GO!'?83:125,'#111');
-    label(k==='GO!'?'LET’S RACE':'GET READY',W/2,550,18);
+    rounded(172,390,196,186,29,'#fff','#111',4);
+    const t=countdown>3?'3':countdown>2?'2':countdown>1?'1':'GO!';
+    text(t,270,475,t==='GO!'?76:122,'#111');text(t==='GO!'?'LET’S RACE':'GET READY',270,548,19);
   }
   function drawRaceHeader(){
-    rounded(153,113,234,47,20,'#fff','#111',3);
-    label(`LEVEL ${level+1}   ·   ${raceTime.toFixed(1)}s`,W/2,137,21);
+    rounded(165,107,210,49,19,'#fff','#111',3);
+    text('MARBLE RACE',270,132,22);
   }
   function drawResults(){
     background();
-    rounded(124,123,292,66,22,'#fff','#111',4);label('WINNER!',W/2,156,45);
-    const winner=finishers[0]||runners[0];marble(winner.id,270,302,159,0,true);
-    rounded(105,418,330,66,19,'#111');label(`${winner.name} WINS!`,W/2,452,30,'#fff');
-    const order=[finishers[1]||runners[1],winner,finishers[2]||runners[2]];
-    const bars=[{x:97,y:661,w:105,h:125},{x:217,y:611,w:107,h:175},{x:341,y:690,w:103,h:96}];
+    rounded(124,123,292,66,22,'#fff','#111',4);text('WINNER!',270,156,45);
+    const winner=finishers[0];if(!winner)return;
+    marble(winner.id,270,302,156,0,true);
+    rounded(105,418,330,66,19,'#111');text(`${winner.name} WINS!`,270,452,30,'#fff');
+    const order=[finishers[1],finishers[0],finishers[2]];
+    const bars=[{x:97,y:660,w:105,h:125},{x:217,y:610,w:107,h:175},{x:341,y:689,w:103,h:96}];
     for(let i=0;i<3;i++){
-      const c=bars[i],p=order[i],x=c.x+c.w/2;
-      rounded(c.x,c.y,c.w,c.h,12,i===1?'#e6e6e6':'#f6f6f6','#111',3.5);
-      marble(p.id,x,c.y-48,i===1?100:84);
-      label([2,1,3][i].toString(),x,c.y+45,35);
-      label(p.name,x,c.y+86,14);
+      const b=bars[i],p=order[i],cx=b.x+b.w/2;
+      rounded(b.x,b.y,b.w,b.h,12,i===1?'#e6e6e6':'#f6f6f6','#111',3.5);
+      marble(p.id,cx,b.y-48,i===1?100:84);
+      text(String([2,1,3][i]),cx,b.y+44,35);
+      text(p.name,cx,b.y+86,14);
     }
-    label('DID YOUR MARBLE WIN?',W/2,835,19);
-    label(`${modes[level]}  ·  ${raceTime.toFixed(1)}s`,W/2,873,14,'#555');
-    if(chosen>=0){rounded(125,522,290,41,16,'#fff','#111',2);label(chosen===winner.id?'YOUR PICK WON!':'TRY ANOTHER MARBLE',W/2,543,16);}
+    text('FIRST THREE ACROSS THE LINE',270,830,17);
+    text(`${raceTime.toFixed(1)}s OF RACING`,270,868,15,'#555');
+    if(chosen>=0){rounded(125,520,290,39,15,'#fff','#111',2);
+      text(chosen===winner.id?'YOUR PICK WON!':'RACE AGAIN TO TRY YOUR LUCK',270,540,15);}
   }
-  function resize(){const b=canvas.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1),cw=Math.max(1,Math.round(b.width*d)),ch=Math.max(1,Math.round(b.height*d));if(canvas.width!==cw||canvas.height!==ch){canvas.width=cw;canvas.height=ch;}}
-  function draw(){resize();const scale=canvas.width/W,viewH=canvas.height/scale,offset=(viewH-H)/2;
+  function resize(){
+    const b=canvas.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);
+    const w=Math.max(1,Math.round(b.width*d)),h=Math.max(1,Math.round(b.height*d));
+    if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+  }
+  function draw(){
+    resize();const scale=canvas.width/W,viewH=canvas.height/scale,offset=(viewH-H)/2;
     ctx.setTransform(scale,0,0,scale,0,offset*scale);ctx.fillStyle='#fff';ctx.fillRect(0,-offset,W,viewH);
-    if(mode==='results')drawResults();else{
-      background();courseArt();
-      if(mode==='ready')drawReady();
-      if(mode==='countdown')drawCountdown();
-      if(mode==='racing')drawRaceHeader();
+    background();if(mode==='results'){drawResults();}else{
+      drawCourse();if(mode==='ready'||mode==='hold')drawReady();
+      if(mode==='countdown')drawCountdown();if(mode==='racing')drawRaceHeader();
     }
     ctx.setTransform(1,0,0,1,0,0);
   }
-  function loop(now){if(!lastFrame)lastFrame=now;const delta=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
-    accumulator+=delta;let steps=0;while(accumulator>=1/120&&steps<12){update(1/120);accumulator-=1/120;steps++;}
-    if(steps===12)accumulator=0;
-    if(mode!==document.body.dataset.mode){document.body.dataset.mode=mode;if(mode==='results')$('start').textContent='RACE AGAIN';}
+  function loop(now){
+    if(!lastFrame)lastFrame=now;
+    const delta=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+    accumulator+=delta;let n=0;
+    while(accumulator>=1/120&&n<12){update(1/120);accumulator-=1/120;n++;}
+    if(n===12)accumulator=0;
+    if(mode!==document.body.dataset.mode){document.body.dataset.mode=mode;
+      if(mode==='results')$('start').textContent='RACE AGAIN';}
     draw();requestAnimationFrame(loop);
   }
-  canvas.addEventListener('pointerup',ev=>{if(mode!=='ready')return;
-    const b=canvas.getBoundingClientRect(),xx=(ev.clientX-b.left)/b.width*W,yy=(ev.clientY-b.top)/b.width*W-((b.height/b.width*W-H)/2);
-    for(let i=0;i<6;i++)if(Math.abs(xx-runners[i].x)<34 && yy>229 && yy<314){chosen=i;status(`${colorNames[i]} selected.`);return;}
+  canvas.addEventListener('pointerup',event=>{
+    if(mode!=='ready'&&mode!=='hold')return;
+    const b=canvas.getBoundingClientRect();
+    const x=(event.clientX-b.left)/b.width*W;
+    const y=(event.clientY-b.top)/b.width*W-((b.height/b.width*W-H)/2);
+    for(const p of runners)if(Math.hypot(x-p.x,y-p.y)<34){chosen=p.id;status(`${p.name} selected.`);return;}
   });
-  $('levelBtn').addEventListener('click',()=>{level=(level+1)%3;seed=Math.floor(Math.random()*1e9);chosen=-1;buildCourse();});
   $('start').addEventListener('click',begin);
   window.addEventListener('resize',resize,{passive:true});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)lastFrame=0;});
   window.TRUNKZ_DEBUG={
-    state:()=>({mode,level,chosen,raceTime,camera,leader:Math.max(...runners.map(p=>p.y)),results:finishers.map(p=>p.name),positions:runners.map(p=>[p.name,Math.round(p.x),Math.round(p.y)]),countdown}),
+    state:()=>({mode,layout,chosen,raceTime,holdTime,countdown,camera,length,baseSpeed,
+      results:finishers.map(p=>({name:p.name,t:p.finishedAt})),
+      positions:runners.map(p=>({name:p.name,x:Math.round(p.x),y:Math.round(p.y),s:Math.round(p.s)}))}),
     start:begin,step:sec=>{for(let i=0;i<Math.round(sec*120);i++)update(1/120);draw();},
-    level:i=>{level=clamp(i,0,2);buildCourse();},newRace:()=>{seed=Math.floor(Math.random()*1e9);buildCourse();}
+    newRace:()=>{seed=randomSeed();buildCourse();},finishers:()=>finishers.length
   };
   buildCourse();resize();requestAnimationFrame(loop);
 })();
