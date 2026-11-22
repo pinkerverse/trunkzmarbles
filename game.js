@@ -3,15 +3,15 @@
   // Native canvas, local SVGs, and WebAudio only. No external libraries.
   const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d',{alpha:false});
   const W=540,H=960,GROUND=2035,HEIGHT=2230,R=24.5;
-  const colorNames=['PINK','BLUE','MINT','SUNNY','LILAC','CORAL'];
-  const keys=['pink','blue','mint','gold','lavender','coral'];
-  const colors=['#ff8bfa','#78b7fb','#7ed6a3','#ffc966','#b9a2f4','#ff9789'];
-  const sprites=keys.map(key=>{const im=new Image();im.src=`./assets/${key}.svg`;return im;});
+  const colorNames=['SUNNY','PINK','BLUE','LILAC','RED','ORANGE','MINT'];
+  const keys=['sunny','pink','blue','lilac','red','orange','mint'];
+  const colors=['#fad356','#ff83ff','#6fc9ff','#ac8dfe','#ff4d4d','#ff993c','#5fbf63'];
+  const sprites=keys.map(key=>{const im=new Image();im.src=`./assets/marble-${key}.svg?v=8`;return im;});
   const $=id=>document.getElementById(id);
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const rand=seed=>()=>{let t=seed+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};
   const modes=['ZIGZAG','SPLIT PATHS','FUNNEL FRENZY'];
-  const startXs=[92,157,222,287,352,417];
+  const startXs=[100,156,212,268,324,380,436];
   let seed=Math.floor(Math.random()*1e9),random=rand(seed),level=0,chosen=-1,mode='ready';
   let rails=[],rotors=[],bumpers=[],funnels=[],runners=[],finishers=[],camera=0;
   let raceTime=0,countdown=3.1,holdTime=3,lastBeat='',resultsTime=0,lastFrame=0,accumulator=0;
@@ -173,21 +173,16 @@
     ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillStyle=color;ctx.fillText(s,x,y);ctx.restore();
   }
   function marble(i,x,y,d=51,angle=0,selected=false){
-    const r=d/2;ctx.save();
-    ctx.beginPath();ctx.arc(x+1.4,y+2,r+1,0,Math.PI*2);ctx.fillStyle='#0003';ctx.fill();
-    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=colors[i];ctx.fill();
-    ctx.save();ctx.beginPath();ctx.arc(x,y,r-1,0,7);ctx.clip();
-    const gloss=ctx.createLinearGradient(x-r,y-r,x+r,y+r);
-    gloss.addColorStop(0,'#ffffffd0');gloss.addColorStop(.33,'#ffffff24');gloss.addColorStop(.68,'#ffffff16');gloss.addColorStop(1,'#0000002a');ctx.fillStyle=gloss;ctx.fillRect(x-r,y-r,d,d);
-    // Contrast pocket keeps the exact pastel-colored head distinct from the tinted sphere.
-    ctx.beginPath();ctx.ellipse(x,y+1,r*.90,r*.64,0,0,7);ctx.fillStyle='#fff8';ctx.fill();
-    const im=sprites[i];if(im.complete&&im.naturalWidth){
-      ctx.translate(x,y);ctx.rotate(angle*.3);ctx.drawImage(im,-r*.90,-r*.53,r*1.8,r*1.08);
+    const im=sprites[i],r=d/2;
+    ctx.save();ctx.translate(x,y);
+    // Render the supplied marble illustration directly, including its gloss and head.
+    if(im.complete&&im.naturalWidth){
+      ctx.rotate(angle*.04);
+      ctx.drawImage(im,-r,-r,d,d);
+    }else{
+      ctx.beginPath();ctx.arc(0,0,r*.9,0,Math.PI*2);ctx.fillStyle=colors[i];ctx.fill();
     }
-    ctx.restore();
-    ctx.beginPath();ctx.arc(x,y,r-1,0,7);ctx.lineWidth=Math.max(2,d*.045);ctx.strokeStyle='#111';ctx.stroke();
-    ctx.beginPath();ctx.arc(x-r*.28,y-r*.27,r*.52,-2.7,-1.1);ctx.strokeStyle='#fffd';ctx.lineWidth=Math.max(1.5,d*.032);ctx.stroke();
-    if(selected){ctx.beginPath();ctx.arc(x,y,r+6,0,7);ctx.strokeStyle='#111';ctx.lineWidth=3.5;ctx.stroke();}
+    if(selected){ctx.beginPath();ctx.arc(0,0,r+5,0,Math.PI*2);ctx.lineWidth=3.5;ctx.strokeStyle='#111';ctx.stroke();}
     ctx.restore();
   }
   function background(){
@@ -237,12 +232,12 @@
     label('PICK A MARBLE',W/2,157,31,'#111');
     label('TAP YOUR FAVORITE TO BACK IT',W/2,211,15,'#4b4b4b');
     // Pointers to individual racers make the selection self-explanatory.
-    for(let i=0;i<6;i++){
+    for(let i=0;i<colorNames.length;i++){
       if(chosen===i){ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(runners[i].x,220);ctx.lineTo(runners[i].x,238);ctx.stroke();}
       label(colorNames[i],runners[i].x,246,11,'#111');
     }
     rounded(148,683,244,38,19,'#fff','#111',2);
-    label('6 MARBLES · 1 WINNER',W/2,702,15);
+    label('7 MARBLES · 1 WINNER',W/2,702,15);
     label('A DIFFERENT RUN EVERY RACE',W/2,740,12,'#666');
   }
   function drawHold(){
@@ -298,7 +293,7 @@
   }
   canvas.addEventListener('pointerup',ev=>{if(mode!=='ready'&&mode!=='hold')return;
     const b=canvas.getBoundingClientRect(),xx=(ev.clientX-b.left)/b.width*W,yy=(ev.clientY-b.top)/b.width*W-((b.height/b.width*W-H)/2);
-    for(let i=0;i<6;i++)if(Math.abs(xx-runners[i].x)<34 && yy>229 && yy<314){chosen=i;status(`${colorNames[i]} selected.`);return;}
+    for(let i=0;i<colorNames.length;i++)if(Math.abs(xx-runners[i].x)<34 && yy>229 && yy<314){chosen=i;status(`${colorNames[i]} selected.`);return;}
   });
   $('start').addEventListener('click',begin);
   window.addEventListener('resize',resize,{passive:true});

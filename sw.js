@@ -1,6 +1,6 @@
 // A versioned cache keeps installed PWAs up to date after each deployment.
-const CACHE='trunkz-marbles-restored-v7';
-const ASSETS=['./','./index.html','./game.js','./manifest.webmanifest','./assets/icon.svg','./assets/pink.svg','./assets/blue.svg','./assets/mint.svg','./assets/gold.svg','./assets/lavender.svg','./assets/coral.svg'];
+const CACHE='trunkz-marbles-uploaded-v8';
+const ASSETS=['./','./index.html','./game.js','./manifest.webmanifest','./assets/icon.svg','./assets/pink.svg','./assets/blue.svg','./assets/mint.svg','./assets/gold.svg','./assets/lavender.svg','./assets/coral.svg','./assets/marble-sunny.svg','./assets/marble-pink.svg','./assets/marble-blue.svg','./assets/marble-lilac.svg','./assets/marble-red.svg','./assets/marble-orange.svg','./assets/marble-mint.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==self.location.origin)return;e.respondWith(fetch(e.request).then(r=>{if(r.ok){const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy))}return r}).catch(()=>caches.match(e.request)))});
