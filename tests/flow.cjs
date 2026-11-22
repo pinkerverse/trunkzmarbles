@@ -11,7 +11,7 @@ elements.scene.getContext=()=>context2d;
 elements.scene.getBoundingClientRect=()=>({width:390,height:390*16/9});
 const document={body:{dataset:{}},getElementById:id=>elements[id],createElement:element,addEventListener(){}};
 class Image{decode(){return Promise.resolve();}}
-const context={window:{TRUNKZPhysics:P},document,Image,crypto:{getRandomValues(array){array[0]=Math.floor(seeded()*4294967296);return array;}},devicePixelRatio:3,requestAnimationFrame(f){nextFrame=f;},console};
+const context={URLSearchParams,location:{search:''},window:{TRUNKZPhysics:P},document,Image,crypto:{getRandomValues(array){array[0]=Math.floor(seeded()*4294967296);return array;}},devicePixelRatio:3,requestAnimationFrame(f){nextFrame=f;},console};
 vm.runInNewContext(fs.readFileSync(require.resolve('../game.js'),'utf8'),context);
 function advance(sec){const count=Math.ceil(sec*60);for(let i=0;i<count;i++){now+=1000/60;const f=nextFrame;assert(f);f(now);}}
 (async()=>{
@@ -22,9 +22,9 @@ function advance(sec){const count=Math.ceil(sec*60);for(let i=0;i<count;i++){now
   assert.equal(read().mode,'ready');const family=read().family;families.add(family);
   const pick=n%7;elements.picks.children[pick].listeners.click();assert.equal(read().chosen,pick);assert.equal(elements.picks.children[pick].attrs['aria-pressed'],'true');
   elements.start.listeners.click();assert.equal(read().mode,'hold');assert(elements.start.disabled);assert.equal(elements.start.textContent,'PICK LOCKED IN');
-  advance(2.8);assert.equal(read().mode,'hold');advance(.4);assert.equal(read().mode,'countdown');advance(2.7);assert.equal(read().mode,'countdown');advance(.3);assert.equal(read().mode,'racing');
-  let waited=0;while(read().mode!=='results'&&waited<25){advance(.1);waited+=.1;}
-  const result=read();assert.equal(result.mode,'results');assert(result.results.length>=3);assert(result.crossings.length>=3);assert.equal(new Set(result.results).size,result.results.length);
+  advance(2.8);assert.equal(read().mode,'hold');advance(.4);assert.equal(read().mode,'countdown');assert(read().gatePresent);advance(2.7);assert.equal(read().mode,'countdown');advance(.3);assert.equal(read().mode,'racing');assert(!read().gatePresent);
+  let waited=0,sawCatcher=false;while(read().mode!=='results'&&waited<40){advance(.1);waited+=.1;if(read().mode==='catching')sawCatcher=true;}
+  const result=read();assert.equal(result.mode,'results');assert(sawCatcher);assert.equal(result.results.length,7);assert(result.positions.every(p=>p.finished&&p.y<=P.CATCH-P.R));assert(result.crossings.length>=3);assert.equal(new Set(result.results).size,result.results.length);
   winners.add(result.results[0]);assert.equal(elements.start.textContent,'RACE AGAIN');assert(!elements.start.disabled);advance(2);assert.equal(read().mode,'results');
   elements.start.listeners.click();assert.equal(read().mode,'ready');assert.notEqual(read().family,family);assert.equal(read().chosen,-1);assert.equal(read().time,0);assert.equal(elements.start.textContent,'START RACE');
  }
