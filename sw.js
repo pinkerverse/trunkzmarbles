@@ -1,6 +1,20 @@
-// A versioned cache keeps installed PWAs up to date after each deployment.
-const CACHE='trunkz-marbles-uploaded-v8';
-const ASSETS=['./','./index.html','./game.js','./manifest.webmanifest','./assets/icon.svg','./assets/pink.svg','./assets/blue.svg','./assets/mint.svg','./assets/gold.svg','./assets/lavender.svg','./assets/coral.svg','./assets/marble-sunny.svg','./assets/marble-pink.svg','./assets/marble-blue.svg','./assets/marble-lilac.svg','./assets/marble-red.svg','./assets/marble-orange.svg','./assets/marble-mint.svg'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==self.location.origin)return;e.respondWith(fetch(e.request).then(r=>{if(r.ok){const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy))}return r}).catch(()=>caches.match(e.request)))});
+'use strict';
+const CACHE='trunkz-marbles-v9';
+const ROOT=new URL('./',self.location.href);
+const ASSETS=['./','./index.html','./physics.js','./game.js','./manifest.webmanifest','./assets/icon.svg',...['sunny','pink','blue','lilac','red','orange','mint'].map(k=>`./assets/marble-${k}.svg`)];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('trunkz-marbles-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{
+ const req=event.request,url=new URL(req.url);
+ if(req.method!=='GET'||url.origin!==ROOT.origin||!url.pathname.startsWith(ROOT.pathname))return;
+ if(req.mode==='navigate'){
+  event.respondWith(fetch(req).then(response=>{
+   if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(new URL('./index.html',ROOT).href,copy)));}return response;
+  }).catch(()=>caches.open(CACHE).then(cache=>cache.match(new URL('./index.html',ROOT).href))));return;
+ }
+ // Query versions resolve to the same precached asset, including the first offline launch.
+ event.respondWith(caches.open(CACHE).then(async cache=>{
+  const cached=await cache.match(req,{ignoreSearch:true});if(cached)return cached;
+  const response=await fetch(req);if(response.ok){const copy=response.clone();event.waitUntil(cache.put(req,copy));}return response;
+ }));
+});
