@@ -21,8 +21,9 @@ function advance(sec){const count=Math.ceil(sec*60);for(let i=0;i<count;i++){now
  for(let n=0;n<30;n++){
   assert.equal(read().mode,'ready');const family=read().family;families.add(family);
   const pick=n%7;elements.picks.children[pick].listeners.click();assert.equal(read().chosen,pick);assert.equal(elements.picks.children[pick].attrs['aria-pressed'],'true');
+  const queued=read().positions.map(p=>[p.x,p.y]);
   elements.start.listeners.click();assert.equal(read().mode,'hold');assert(elements.start.disabled);assert.equal(elements.start.textContent,'PICK LOCKED IN');
-  advance(2.8);assert.equal(read().mode,'hold');advance(.4);assert.equal(read().mode,'countdown');assert(read().gatePresent);advance(2.7);assert.equal(read().mode,'countdown');advance(.3);assert.equal(read().mode,'racing');assert(!read().gatePresent);
+  advance(2.8);assert.equal(read().mode,'hold');advance(.4);assert.equal(read().mode,'countdown');assert(read().gatePresent);assert.deepEqual(read().positions.map(p=>[p.x,p.y]),queued);advance(2.7);assert.equal(read().mode,'countdown');advance(.3);assert.equal(read().mode,'racing');assert(!read().gatePresent);
   let waited=0,sawCatcher=false;while(read().mode!=='results'&&waited<40){advance(.1);waited+=.1;if(read().mode==='catching')sawCatcher=true;}
   const result=read();assert.equal(result.mode,'results');assert(sawCatcher);assert.equal(result.results.length,7);assert(result.positions.every(p=>p.finished&&p.y<=P.CATCH-P.R));assert(result.crossings.length>=3);assert.equal(new Set(result.results).size,result.results.length);
   winners.add(result.results[0]);assert.equal(elements.start.textContent,'RACE AGAIN');assert(!elements.start.disabled);advance(2);assert.equal(read().mode,'results');

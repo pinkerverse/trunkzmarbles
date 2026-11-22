@@ -33,6 +33,6 @@ node tests/flow.cjs
 node tests/offline.cjs
 ```
 
-[QA.md](QA.md) records completed automated checks, reference review and outstanding browser release checks.
+[QA.md](QA.md) records completed automated/browser checks, reference review and physical-device limits.
 
-Deploy the repository root with the existing GitHub Pages configuration after browser verification. On iPhone, use Safari → Share → Add to Home Screen and the built-in screen recorder.
+Deploy the repository root with the existing GitHub Pages configuration after the recorded browser verification. On iPhone, use Safari → Share → Add to Home Screen and the built-in screen recorder.

@@ -24,15 +24,47 @@ The collection/settling phase follows the third-place finish and adds time to th
 
 During implementation, a starter shelf too close to the side wall and pegboard edge gaps too narrow for a marble were found in simulation and corrected. Sliding release gates were added to gather the field and create more lead changes without scripted outcomes.
 
-## Outstanding release checks
+## Completed real-browser verification
 
-V10 has not yet passed real-browser QA. An isolated preview commit was prepared, but automatic approval review blocked updating main because fresh authorization was required for this V10 deployment. The live app remains V9.
+20 randomized V10 browser races passed before production deployment, across all three families. The preview used the same physics and game code as production, with relative asset paths adjusted for the isolated directory. The `qa` URL flag exposed read-only race diagnostics in a Canvas data attribute; it did not change simulation or outcomes.
 
-Before releasing V10:
+Checked in the browser:
 
-1. Publish the isolated HTTPS preview within this repository while keeping V9 at the root.
-2. Run at least 20 randomized browser races across all families. Verify the sloping queue, pick banner and hit targets, full countdown, stopper removal, ramp/peg/spring interactions, camera, real crossings and the catching rail holding all seven.
-3. Inspect 375×667, 390×844 and 1080×1920 layouts; ensure the countdown leaves the queue visible and the podium/replay control do not overlap.
-4. Verify the root production URL and V10 scripts after publishing, then run a live smoke test.
+- Fixed sloping queue while the selection hold and countdown ran, and a visible stopper until GO.
+- Large animated numbers above the queue and removal of the stopper on GO; real rolling from the shelf afterward.
+- Physical ramp, peg, spring, moving-gate and pendulum interaction; leader camera and finish approach.
+- Seven actual finish crossings in each race. The first three remained locked throughout collection, and every marble was retained above the catcher at results.
+- Repeated selection, countdown, replay and complete race lifecycles.
+- 375×667, 390×844 and 1080×1920 layouts. Visual checks included the queued start, countdown, GO, race sections, the catcher with seven marbles, and podium/replay separation. A full-page 1080×1920 result was inspected.
+- No warnings or errors were reported by either preview test page after the 20-race run.
 
-Physical iPhone Home Screen installation, speaker output and offline relaunch remain device-specific checks.
+All seven colors won. Third-place crossing times ranged from 12.756 to 22.339 seconds. The last marble crossed no later than 29.942 seconds in this browser sample. The collection hold then allowed the final arrival to settle before the podium. Races had 0–10 lead changes (mean 1.75). Faster and slower natural finishes are allowed.
+
+Exact seeds, families, third-place times, last arrival times, podiums, lead changes and spring hits are retained in [tests/browser-v10.json](tests/browser-v10.json).
+
+| Run | Seed | Family | Third place | All seven | Podium | Lead changes |
+| --- | ---: | --- | ---: | ---: | --- | ---: |
+| 1 | 1391183000 | Rolling Rivals | 19.073 s | 23.742 s | BLUE, MINT, SUNNY | 3 |
+| 2 | 1699693908 | Switchback Springs | 16.690 s | 19.858 s | PINK, SUNNY, RED | 0 |
+| 3 | 10007692 | Pinball Parade | 17.919 s | 22.650 s | SUNNY, LILAC, MINT | 2 |
+| 4 | 215946805 | Switchback Springs | 14.971 s | 20.233 s | LILAC, RED, ORANGE | 0 |
+| 5 | 3613936989 | Rolling Rivals | 21.676 s | 29.942 s | MINT, LILAC, SUNNY | 4 |
+| 6 | 2821723630 | Switchback Springs | 12.756 s | 20.567 s | RED, ORANGE, MINT | 0 |
+| 7 | 4171129729 | Rolling Rivals | 18.989 s | 21.192 s | ORANGE, PINK, RED | 3 |
+| 8 | 2764828032 | Switchback Springs | 15.651 s | 18.475 s | LILAC, BLUE, PINK | 10 |
+| 9 | 1273826845 | Rolling Rivals | 22.339 s | 25.679 s | BLUE, SUNNY, MINT | 7 |
+| 10 | 654735100 | Switchback Springs | 15.004 s | 21.942 s | PINK, RED, LILAC | 1 |
+| 11 | 205362266 | Pinball Parade | 17.428 s | 23.746 s | LILAC, ORANGE, SUNNY | 0 |
+| 12 | 1590788012 | Pinball Parade | 16.949 s | 21.429 s | PINK, BLUE, LILAC | 0 |
+| 13 | 2981908354 | Rolling Rivals | 18.734 s | 22.587 s | MINT, BLUE, PINK | 1 |
+| 14 | 2624880131 | Switchback Springs | 12.843 s | 15.675 s | LILAC, ORANGE, PINK | 1 |
+| 15 | 3651650323 | Pinball Parade | 17.617 s | 22.871 s | SUNNY, LILAC, BLUE | 2 |
+| 16 | 3862167852 | Pinball Parade | 16.745 s | 21.358 s | ORANGE, SUNNY, MINT | 0 |
+| 17 | 885325740 | Rolling Rivals | 19.914 s | 23.275 s | MINT, RED, SUNNY | 1 |
+| 18 | 3469064614 | Switchback Springs | 16.337 s | 22.825 s | BLUE, ORANGE, MINT | 0 |
+| 19 | 3238186952 | Rolling Rivals | 19.488 s | 27.012 s | BLUE, LILAC, RED | 0 |
+| 20 | 3903225450 | Switchback Springs | 16.164 s | 17.667 s | ORANGE, LILAC, RED | 0 |
+
+## Physical-device limits
+
+These were real browser runs using mobile and recording viewport sizes. Physical iPhone Home Screen installation, speaker output and offline relaunch remain device-specific checks; worker/cache behavior and audio activation were reviewed and covered by the applicable automated checks above.
