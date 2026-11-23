@@ -1,7 +1,7 @@
 /* TRUNKZ: fixed-step circle/segment physics, shared by app and regression tests. */
 (function(root){
 'use strict';
-const W=540,H=960,R=21,LEFT=43,RIGHT=467,FINISH=3260,CATCH=FINISH+136,DT=1/240;
+const W=540,H=960,R=21,LEFT=43,RIGHT=467,FINISH=3260,CATCH=FINISH+136,WALL=7,GRAVITY=500,MAX_FALL=480,MAX_BOUNCE=145,DT=1/240;
 const names=['SUNNY','PINK','BLUE','LILAC','RED','ORANGE','MINT'];
 const families=['Switchback Springs','Pinball Parade','Rolling Rivals'];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -12,7 +12,7 @@ function create(seed,family){
  const line=(x1,y1,x2,y2,kind='ramp')=>rails.push({x1,y1,x2,y2,thickness:10,kind});
  const rotor=(x,y,l,s,type='spinner')=>rotors.push({x,y,l,s:s*range(.92,1.08),a:range(-Math.PI,Math.PI),phase:range(0,Math.PI*2),thickness:10,type});
  const funnel=(x,y,gap=114,drop=92)=>{line(LEFT,y,x-gap/2,y+drop,'funnel');line(RIGHT,y,x+gap/2,y+drop,'funnel');};
- const peg=(x,y,r=11,spring=false)=>bumpers.push({id:bumpers.length,x,y,r,spring,flash:-10});
+ const peg=(x,y,r=11,spring=false)=>bumpers.push({id:bumpers.length,x,y,r,spring:true,flash:-10});
  const pins=(y,rows=3)=>{for(let row=0;row<rows;row++){const xs=row%2?[140,220,300,380]:[108,182,256,330,404];xs.forEach((x,i)=>peg(x,y+row*90,10,(row+i)%4===1));}};
  // All seven wait on this real shelf; the vertical stopper exists until GO only.
  const startRail={x1:LEFT,y1:320,x2:410,y2:370,thickness:10,kind:'start'};rails.push(startRail);
@@ -84,20 +84,20 @@ function step(world,dt=DT,continueFinish=false){
  if(world.done&&!continueFinish)return;
  const start=world.time;world.time+=dt;const segments=[...world.rails,...movingSegments(world)];
  // Finished marbles remain real bodies and settle on the catching rail.
- for(const p of world.marbles){p.previousY=p.y;p.vy+=650*dt;p.vx*=Math.exp(-.035*dt);p.vx=clamp(p.vx,-750,750);p.vy=clamp(p.vy,-650,920);p.x+=p.vx*dt;p.y+=p.vy*dt;p.angle+=p.omega*dt;}
+ for(const p of world.marbles){p.previousY=p.y;p.vy+=GRAVITY*dt;p.vx*=Math.exp(-.035*dt);p.vx=clamp(p.vx,-750,750);p.vy=clamp(p.vy,-480,MAX_FALL);p.x+=p.vx*dt;p.y+=p.vy*dt;p.angle+=p.omega*dt;}
  for(let iteration=0;iteration<3;iteration++){
   for(const p of world.marbles){
    for(const s of segments)if(p.y>Math.min(s.y1,s.y2)-p.r-8&&p.y<Math.max(s.y1,s.y2)+p.r+8){if(contact(p,s,s.omega||0))world.contacts++;}
    for(const b of world.bumpers){const dx=p.x-b.x,dy=p.y-b.y,d=Math.hypot(dx,dy),depth=p.r+b.r-d;
     if(depth>0&&d>.001){const nx=dx/d,ny=dy/d;p.x+=nx*(depth+.001);p.y+=ny*(depth+.001);const vn=p.vx*nx+p.vy*ny;
-     if(vn<0){let out=-vn*.35;if(b.spring&&vn<-35&&world.time-p.lastSpring>.16){out=clamp(-vn*.92,130,250);p.lastSpring=world.time;b.flash=world.time;world.springHits++;}p.vx+=(out-vn)*nx;p.vy+=(out-vn)*ny;}p.contacts++;}
+     if(vn<0){let out=-vn*.35;if(b.spring&&vn<-35&&world.time-p.lastSpring>.16){out=clamp(-vn*.55,70,MAX_BOUNCE);p.lastSpring=world.time;b.flash=world.time;world.springHits++;}p.vx+=(out-vn)*nx;p.vy+=(out-vn)*ny;}p.contacts++;}
    }
-   if(p.x<LEFT+p.r){p.x=LEFT+p.r;if(p.vx<0){p.vx*=-.12;p.wallHits++;}}
-   if(p.x>RIGHT-p.r){p.x=RIGHT-p.r;if(p.vx>0){p.vx*=-.12;p.wallHits++;}}
+   if(p.x<LEFT+p.r+WALL/2){p.x=LEFT+p.r+WALL/2;if(p.vx<0){p.vx*=-.12;p.wallHits++;}}
+   if(p.x>RIGHT-p.r-WALL/2){p.x=RIGHT-p.r-WALL/2;if(p.vx>0){p.vx*=-.12;p.wallHits++;}}
   }
   for(let i=0;i<7;i++)for(let j=i+1;j<7;j++)if(pair(world.marbles[i],world.marbles[j]))world.pairContacts++;
  }
- for(const p of world.marbles)p.x=clamp(p.x,LEFT+p.r,RIGHT-p.r);
+ for(const p of world.marbles){p.x=clamp(p.x,LEFT+p.r+WALL/2,RIGHT-p.r-WALL/2);p.vy=Math.min(p.vy,MAX_FALL);}
  const crossed=[];
  for(const p of world.marbles)if(!p.finished&&p.previousY<FINISH&&p.y>=FINISH){p.finished=true;p.finishedAt=start+dt*(FINISH-p.previousY)/(p.y-p.previousY);crossed.push(p);world.crossings.push({id:p.id,from:p.previousY,to:p.y,x:p.x,time:p.finishedAt});}
  crossed.sort((a,b)=>a.finishedAt-b.finishedAt);world.finishers.push(...crossed);
@@ -105,6 +105,6 @@ function step(world,dt=DT,continueFinish=false){
  if(world.finishers.length>=3&&!world.done){world.done=true;world.podiumTime=world.finishers[2].finishedAt;}
  if(world.finishers.length===7&&world.allFinishedAt===null)world.allFinishedAt=world.time;
 }
-const api={W,H,R,LEFT,RIGHT,FINISH,CATCH,DT,names,families,clamp,rng,create,step,movingSegments};
+const api={W,H,R,LEFT,RIGHT,FINISH,CATCH,WALL,GRAVITY,MAX_FALL,MAX_BOUNCE,DT,names,families,clamp,rng,create,step,movingSegments};
 if(typeof module!=='undefined')module.exports=api;else root.TRUNKZPhysics=api;
 })(typeof window==='undefined'?globalThis:window);

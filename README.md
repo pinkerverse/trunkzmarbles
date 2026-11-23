@@ -1,24 +1,24 @@
-# TRUNKZ Marbles · V10
+# TRUNKZ Marbles · V11 recording flow
 
-A dependency-free 9:16 marble-race recording tool for iPhone PWA and Instagram Reels. Only `pinkerverse/trunkzmarbles` is in scope. The seven original V8 SVG illustrations remain unchanged.
+A dependency-free, 9:16 marble-race recording tool for iPhone PWA and Instagram Reels. Only `pinkerverse/trunkzmarbles` is in scope. The seven original marble SVG designs remain unchanged.
 
-## Race experience
+## Recording flow
 
-- All seven marbles line up on a sloping starting shelf behind a visible vertical stopper. The pick-a-marble banner appears above the waiting queue. The chosen marble is selectable through accessible hit targets placed over its actual starting position.
-- Start Race responds immediately, holds the selection for three seconds, then plays large animated 3–2–1 numbers above the queue. The stopper disappears on GO while the shelf stays in place and the marbles genuinely roll off its end.
-- Three longer course families use free-ended ramps, funnels, pegboards, swinging pendulums, seesaws, rotating bars, sliding release gates and bounded spring bumpers. All track elements are black and white. Spring bumpers use concentric markings and a brief monochrome impact ring.
-- Typical third-place finish times are approximately 15–20 seconds; races end naturally outside that range. There is no timer-based ranking, teleport recovery or predetermined winner.
-- A smooth camera follows the leader to a real checkered crossing plane. Finish timestamps are interpolated and ordered by physical crossings.
-- The first three places lock on their crossings. Physics then continues for every marble: all seven cross and collect on the visible physical catching rail below the finish. After they arrive and settle, the podium displays the original top three. Catcher contact cannot change the recorded finish order.
-- Results remain until Race Again returns to a fresh course and starting queue.
+1. The game opens on seven marbles queued on the actual sloping starting shelf. The only introductory copy is **PICK A MARBLE** and **Which one will win?** Small color labels identify the seven choices.
+2. Tap a marble if desired, begin your phone's screen recording, then tap **START RACE**. The stopper disappears and racing starts immediately with **GO!** There is no queued hold, 3–2–1 countdown or extra introductory caption.
+3. Watch the race. The side boundaries are thicker; every round peg/bumper is a solid black dot with a modest rebound. Falling motion uses lower gravity and a lower downward speed limit.
+4. The game ends on the third physical finish crossing and displays the top-three podium immediately. It does not wait for the other four marbles or run an extra collection phase. Stop the phone recording when the podium appears.
+5. **RACE AGAIN** returns to a new course and fresh selection screen.
 
-## Technical details
+The on-screen TRUNKZ MARBLES heading, 7 MARBLES / 1 WINNER caption and Tap a marble to back it caption have been removed. App metadata and icons retain their identity for installation.
 
-`physics.js` uses fixed 240 Hz integration, iterative circle/segment and circle/circle constraints, conservative restitution, moving-obstacle surface velocities, constant gravity and rolling spin. The complete original marble illustration rotates during the race.
+## Simulation and layout
 
-The responsive composition stays 9:16 without cropping on tall iPhone screens. Essential text, selection, countdown, podium and controls stay within the recording composition. Audio is unlocked by the Start tap.
+The three varied course families retain their ramps, funnels, peg fields and moving obstacles. Physics uses a fixed 240 Hz timestep, real collisions, rolling spin and interpolated crossing times. Results are never awarded by a timer or by unfinished positions.
 
-`sw.js` precaches the app and all seven sprites, handles version-query requests offline and limits cache deletion to this app. V10 uses new script URLs and a new cache version. Worker-driven reloads wait for an idle screen.
+V11 tuning: gravity 500 world units/s², downward cap 480 units/s (also applied after collisions), bumper rebound capped at 145 units/s, side boundary stroke 7 units. The visible border thickness is reflected in the collision bounds.
+
+The composition remains 9:16 and scales without cropping on tall phone screens. Audio unlocks on the Start tap. The existing PWA and offline behavior are preserved with V11 script URLs and a new worker cache version. Worker updates reload only at an idle screen.
 
 ## Verification
 
@@ -33,6 +33,4 @@ node tests/flow.cjs
 node tests/offline.cjs
 ```
 
-[QA.md](QA.md) records completed automated/browser checks, reference review and physical-device limits.
-
-Deploy the repository root with the existing GitHub Pages configuration after the recorded browser verification. On iPhone, use Safari → Share → Add to Home Screen and the built-in screen recorder.
+See [QA.md](QA.md) and [the recorded browser runs](tests/browser-v11.json) for verification evidence and device-specific limits.
