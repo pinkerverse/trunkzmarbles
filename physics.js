@@ -1,7 +1,7 @@
 /* TRUNKZ: fixed-step circle/segment physics, shared by app and regression tests. */
 (function(root){
 'use strict';
-const W=540,H=960,R=21,LEFT=43,RIGHT=467,FINISH=3260,CATCH=FINISH+136,WALL=7,GRAVITY=500,MAX_FALL=480,MAX_BOUNCE=250,DT=1/240;
+const W=540,H=960,R=21,LEFT=43,RIGHT=467,FINISH=3260,CATCH=FINISH+136,WALL=7,GRAVITY=500,MAX_FALL=480,MAX_BOUNCE=330,DT=1/240;
 const names=['SUNNY','PINK','BLUE','LILAC','RED','ORANGE','MINT'];
 const families=['Switchback Springs','Pinball Parade','Rolling Rivals'];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -10,7 +10,7 @@ function create(seed,family){
  const random=rng(seed),range=(a,b)=>a+(b-a)*random();family=family===undefined?Math.floor(random()*3):family;
  const rails=[],rotors=[],bumpers=[];
  const line=(x1,y1,x2,y2,kind='ramp')=>rails.push({x1,y1,x2,y2,thickness:10,kind});
- const rotor=(x,y,l,s,type='spinner')=>rotors.push({x,y,l,s:s*range(.92,1.08),a:range(-Math.PI,Math.PI),phase:range(0,Math.PI*2),thickness:10,type});
+ const rotor=(x,y,l,s,type='spinner',late=false)=>rotors.push({x,y,l,late,s:s*range(.92,1.08),a:range(-Math.PI,Math.PI),phase:range(0,Math.PI*2),thickness:10,type});
  const funnel=(x,y,gap=114,drop=92)=>{line(LEFT,y,x-gap/2,y+drop,'funnel');line(RIGHT,y,x+gap/2,y+drop,'funnel');};
  const peg=(x,y,r=12,bank=false)=>bumpers.push({id:bumpers.length,x,y,r,bank,spring:true,flash:-10});
  // Staggered lanes leave 48 px between 12 px pegs: a 42 px marble fits,
@@ -18,7 +18,7 @@ function create(seed,family){
  const pins=(y,collect=true)=>{
   if(collect)funnel(248,y-140,100,62);
   for(let row=0;row<3;row++){
-   const xs=row%2?[147,219,291,363]:[111,183,255,327,399];
+   const xs=row%2?[LEFT,147,219,291,363,RIGHT]:[111,183,255,327,399];
    xs.forEach(x=>peg(x,y+row*80,12,true));
   }
  };
@@ -32,7 +32,7 @@ function create(seed,family){
   line(LEFT,1055,383,1152);pins(1400);
   funnel(255,1700,100,96);rotor(255,1840,135,1.3,'pendulum');
   line(127,2190,RIGHT,2080);funnel(255,2350,100,92);
-  peg(145,2600,17);peg(270,2560,15);peg(395,2600,17);
+  rotor(175,2600,160,.55,'spinner',true);rotor(335,2600,160,-.65,'spinner',true);
   line(LEFT,2700,205,2752);line(RIGHT,2700,305,2752);
  }else if(family===1){
   // Collect first, then rock the pack. The later fork has a real central entry.
@@ -41,7 +41,7 @@ function create(seed,family){
   line(255,1880,140,2000);line(255,1880,370,2000);
   line(LEFT,2140,205,2200);line(RIGHT,2140,305,2200);
   rotor(255,2340,180,-1.45);funnel(255,2520,100,90);
-  peg(145,2760,16);peg(365,2760,16);
+  rotor(175,2740,160,-.6,'spinner',true);rotor(335,2740,160,.7,'spinner',true);
  }else{
   // The funnel is the pegboard entry; omit the old gate squeezed between them.
   funnel(255,735,100,92);pins(1010,false);
@@ -49,7 +49,7 @@ function create(seed,family){
   line(LEFT,1485,205,1540);line(RIGHT,1485,305,1540);
   funnel(280,1690,100,92);rotor(255,1910,132,1.4,'pendulum');
   line(LEFT,2135,383,2220);line(127,2445,RIGHT,2345);
-  funnel(255,2590,100,90);peg(145,2740,15);peg(365,2740,15);
+  funnel(255,2530,100,90);rotor(175,2740,160,.6,'spinner',true);rotor(335,2740,160,-.7,'spinner',true);
  }
  line(127,2990,RIGHT,2880);funnel(255,3100,100,78);
  // Fixed, aligned rails keep the sections readable. Variation comes from the
@@ -58,8 +58,8 @@ function create(seed,family){
  const places=[86,134,182,230,278,326,374];
  for(let i=6;i>0;i--){const j=Math.floor(random()*(i+1));[places[i],places[j]]=[places[j],places[i]];}
  const slope=(startRail.y2-startRail.y1)/(startRail.x2-startRail.x1);
- const marbles=places.map((x,id)=>({id,name:names[id],x,y:startRail.y1+(x-LEFT)*slope-(R+startRail.thickness/2)*Math.sqrt(1+slope*slope),vx:0,vy:0,r:R,angle:0,omega:0,finished:false,finishedAt:null,contacts:0,pegHits:0,wallHits:0,lastSpring:-10,previousY:0}));
- return {seed,family,rails,rotors,bumpers,startRail,gate,catchRail,marbles,time:0,podiumTime:null,allFinishedAt:null,finishers:[],crossings:[],leadChanges:0,leader:null,done:false,contacts:0,pairContacts:0,springHits:0};
+ const marbles=places.map((x,id)=>({id,name:names[id],x,y:startRail.y1+(x-LEFT)*slope-(R+startRail.thickness/2)*Math.sqrt(1+slope*slope),vx:0,vy:0,r:R,angle:0,omega:0,finished:false,finishedAt:null,contacts:0,pegHits:0,rotorHits:0,lateHits:0,lateEntered:false,wallHits:0,lastSpring:-10,previousY:0}));
+ return {seed,family,rails,rotors,bumpers,startRail,gate,catchRail,marbles,time:0,podiumTime:null,allFinishedAt:null,finishers:[],crossings:[],leadChanges:0,leader:null,done:false,contacts:0,pairContacts:0,springHits:0,rotorHits:0,lateHits:0,lateFirst:null};
 }
 function contact(p,s,omega=0){
  const dx=s.x2-s.x1,dy=s.y2-s.y1,l2=dx*dx+dy*dy;if(l2<.001)return false;
@@ -87,7 +87,7 @@ function movingSegments(world){
   else if(s.type==='pendulum'){a=Math.PI/2+.73*Math.sin(world.time*s.s+s.phase);omega=.73*s.s*Math.cos(world.time*s.s+s.phase);}
   else a=s.a+s.s*world.time;
   const c=Math.cos(a),v=Math.sin(a),half=s.type==='pendulum'?0:s.l/2;
-  return {x1:s.x-c*half,y1:s.y-v*half,x2:s.x+c*(s.type==='pendulum'?s.l:s.l/2),y2:s.y+v*(s.type==='pendulum'?s.l:s.l/2),thickness:s.thickness,cx:s.x,cy:s.y,omega,type:s.type};
+  return {x1:s.x-c*half,y1:s.y-v*half,x2:s.x+c*(s.type==='pendulum'?s.l:s.l/2),y2:s.y+v*(s.type==='pendulum'?s.l:s.l/2),thickness:s.thickness,cx:s.x,cy:s.y,omega,type:s.type,late:s.late};
  });
 }
 function step(world,dt=DT,continueFinish=false){
@@ -97,10 +97,12 @@ function step(world,dt=DT,continueFinish=false){
  for(const p of world.marbles){p.previousY=p.y;p.vy+=GRAVITY*dt;p.vx*=Math.exp(-.035*dt);p.vx=clamp(p.vx,-750,750);p.vy=clamp(p.vy,-480,MAX_FALL);p.x+=p.vx*dt;p.y+=p.vy*dt;p.angle+=p.omega*dt;}
  for(let iteration=0;iteration<3;iteration++){
   for(const p of world.marbles){
-   for(const s of segments)if(p.y>Math.min(s.y1,s.y2)-p.r-8&&p.y<Math.max(s.y1,s.y2)+p.r+8){if(contact(p,s,s.omega||0))world.contacts++;}
+   for(const s of segments)if(p.y>Math.min(s.y1,s.y2)-p.r-8&&p.y<Math.max(s.y1,s.y2)+p.r+8){if(contact(p,s,s.omega||0)){world.contacts++;if(s.type){p.rotorHits++;world.rotorHits++;if(s.late){p.lateHits++;world.lateHits++;}}}}
    for(const b of world.bumpers){const dx=p.x-b.x,dy=p.y-b.y,d=Math.hypot(dx,dy),depth=p.r+b.r-d;
     if(depth>0&&d>.001){const nx=dx/d,ny=dy/d;p.x+=nx*(depth+.001);p.y+=ny*(depth+.001);const vn=p.vx*nx+p.vy*ny;
-     if(vn<0){let out=-vn*.35;if(b.spring&&vn<-35&&world.time-p.lastSpring>.16){out=clamp(-vn*.92,130,MAX_BOUNCE);p.lastSpring=world.time;b.flash=world.time;world.springHits++;}p.vx+=(out-vn)*nx;p.vy+=(out-vn)*ny;}p.contacts++;if(b.bank)p.pegHits++;}
+     if(vn<0){let out=-vn*.35,fired=false;if(b.spring&&vn<-35&&world.time-p.lastSpring>.16){out=clamp(-vn*1.1,200,MAX_BOUNCE);fired=true;p.lastSpring=world.time;b.flash=world.time;world.springHits++;}p.vx+=(out-vn)*nx;p.vy+=(out-vn)*ny;
+      // A glancing hit on the upper half still kicks visibly upward.
+      if(fired&&ny<-.15)p.vy=Math.min(p.vy,-160-60*(-ny));}p.contacts++;if(b.bank)p.pegHits++;}
    }
    if(p.x<LEFT+p.r+WALL/2){p.x=LEFT+p.r+WALL/2;if(p.vx<0){p.vx*=-.12;p.wallHits++;}}
    if(p.x>RIGHT-p.r-WALL/2){p.x=RIGHT-p.r-WALL/2;if(p.vx>0){p.vx*=-.12;p.wallHits++;}}
@@ -108,6 +110,8 @@ function step(world,dt=DT,continueFinish=false){
   for(let i=0;i<7;i++)for(let j=i+1;j<7;j++)if(pair(world.marbles[i],world.marbles[j]))world.pairContacts++;
  }
  for(const p of world.marbles){p.x=clamp(p.x,LEFT+p.r+WALL/2,RIGHT-p.r-WALL/2);p.vy=Math.min(p.vy,MAX_FALL);}
+ const entries=world.marbles.filter(p=>!p.lateEntered&&p.previousY<2480&&p.y>=2480).sort((a,b)=>(2480-a.previousY)/(a.y-a.previousY)-(2480-b.previousY)/(b.y-b.previousY));
+ for(const p of entries){p.lateEntered=true;if(world.lateFirst===null)world.lateFirst=p.id;}
  const crossed=[];
  for(const p of world.marbles)if(!p.finished&&p.previousY<FINISH&&p.y>=FINISH){p.finished=true;p.finishedAt=start+dt*(FINISH-p.previousY)/(p.y-p.previousY);crossed.push(p);world.crossings.push({id:p.id,from:p.previousY,to:p.y,x:p.x,time:p.finishedAt});}
  crossed.sort((a,b)=>a.finishedAt-b.finishedAt);world.finishers.push(...crossed);
