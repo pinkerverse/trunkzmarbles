@@ -1,9 +1,14 @@
 'use strict';
-const VERSION=17;
+const VERSION=18;
 const CACHE=`trunkz-marbles-v${VERSION}`;
 const ROOT=new URL('./',self.location.href);
 const SHELL=new URL(`./index.html?v=${VERSION}`,ROOT).href;
-const ASSETS=[SHELL,`./physics.js?v=${VERSION}`,`./game.js?v=${VERSION}`,'./manifest.webmanifest','./assets/icon.svg',...['sunny','pink','blue','lilac','red','orange','mint'].map(k=>`./assets/marble-${k}.svg`)];
+const ASSETS=[
+ SHELL,`./physics.js?v=${VERSION}`,`./game.js?v=${VERSION}`,`./manifest.webmanifest?v=${VERSION}`,
+ './assets/icon.svg',
+ ...['180','192','512','maskable'].map(size=>`./assets/pink-marble-icon-${size}.png`),
+ ...['sunny','pink','blue','lilac','red','orange','mint'].map(k=>`./assets/marble-${k}.svg`)
+];
 self.addEventListener('install',event=>{
  const requests=ASSETS.map(path=>new Request(new URL(path,ROOT),{cache:'reload'}));
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(requests)).then(()=>self.skipWaiting()));

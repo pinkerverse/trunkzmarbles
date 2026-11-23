@@ -1,4 +1,4 @@
-# TRUNKZ Marbles · V17
+# TRUNKZ Marbles · V18
 
 A dependency-free, 9:16 marble-race recording tool for iPhone PWA and Instagram Reels. Only `pinkerverse/trunkzmarbles` is in scope. The seven original marble SVG designs remain unchanged.
 
@@ -18,7 +18,7 @@ Ten layouts combine different upper and lower sections. Race Again shuffles the 
 
 Gravity is 500 world units/s². The model caps downward speed at 480 units/s, including after collisions, and bumper rebound at 250 units/s. The collision bounds account for the 7-unit side boundary stroke.
 
-The composition remains 9:16 and scales without cropping on tall phone screens. Audio unlocks on the Start tap. The PWA caches the V17 release for offline play. Worker updates reload only at an idle screen.
+The composition remains 9:16 and scales without cropping on tall phone screens. Audio unlocks on the Start tap. The PWA caches the V18 release for offline play. Worker updates reload only at an idle screen.
 
 ## Verification
 

@@ -1,12 +1,16 @@
 {
   "name":"TRUNKZ Marbles",
   "short_name":"TRUNKZ",
-  "description":"Pick a marble and race across three black and white marble runs",
+  "description":"Pick a marble and race across ten black and white marble runs",
   "start_url":"./index.html",
   "scope":"./",
   "display":"standalone",
   "orientation":"portrait",
   "background_color":"#ffffff",
   "theme_color":"#ffffff",
-  "icons":[{"src":"./assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+  "icons":[
+    {"src":"./assets/pink-marble-icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"./assets/pink-marble-icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"./assets/pink-marble-icon-maskable.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ]
 }
