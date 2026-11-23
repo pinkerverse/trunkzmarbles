@@ -28,7 +28,8 @@ function advance(sec){for(let i=0;i<Math.ceil(sec*60);i++){now+=1000/60;assert(n
   advance(.8);assert.equal(read().mode,'countdown');assert.equal(read().time,0);
   drawn.length=0;advance(.2);assert.equal(read().mode,'racing');assert(!read().gatePresent);assert(drawn.includes('GO!'));
   const dropping=read().positions;
-  assert(dropping.every((p,i)=>p.x===lineup[i].x&&p.y>lineup[i].y&&p.y===dropping[0].y),'All seven must fall together before hitting obstacles');
+  const drift=dropping[0].x-lineup[0].x;
+  assert(dropping.every((p,i)=>Math.abs(p.x-lineup[i].x-drift)<.001&&p.y>lineup[i].y&&p.y===dropping[0].y),'All seven must fall together before hitting obstacles');
   drawn.length=0;advance(.02);assert(!drawn.includes('PICK A MARBLE'),'The pick banner must clear at GO');
   let waited=0;while(read().mode!=='results'&&waited<40){advance(.1);waited+=.1;assert(['racing','results'].includes(read().mode));}
   assert(!drawn.some(s=>/LEADS|FINISHED FIRST/.test(s)),'The running race must be free of ranking banners');

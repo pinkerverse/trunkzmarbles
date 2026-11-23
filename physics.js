@@ -22,7 +22,7 @@ function create(seed,family){
    xs.forEach(x=>peg(x,y+row*80,12,true));
   }
  };
- // The full-width gate disappears on GO, releasing all seven from rest.
+ // The full-width gate disappears on GO, releasing all seven from the same height.
  const gate={x1:LEFT,y1:336,x2:RIGHT,y2:336,thickness:8};
  const places=[93,147,201,255,309,363,417];
  if(family===0){
@@ -30,7 +30,7 @@ function create(seed,family){
   line(LEFT,1055,383,1152);pins(1400);
   funnel(255,1700,100,96);rotor(255,1840,135,1.3,'pendulum');
   line(127,2190,RIGHT,2080);funnel(255,2350,100,92);
-  peg(145,2600,17);peg(270,2560,15);peg(395,2600,17);
+  peg(130,2600,22);peg(255,2560,22);peg(380,2600,22);
   line(LEFT,2700,205,2752);line(RIGHT,2700,305,2752);
  }else if(family===1){
   // Collect first, then rock the pack. The later fork has a real central entry.
@@ -39,7 +39,7 @@ function create(seed,family){
   line(255,1880,140,2000);line(255,1880,370,2000);
   line(LEFT,2140,205,2200);line(RIGHT,2140,305,2200);
   rotor(255,2340,180,-1.45);funnel(255,2520,100,90);
-  peg(145,2760,16);peg(365,2760,16);
+  peg(145,2760,20);peg(365,2760,20);
  }else{
   // The funnel is the pegboard entry; omit the old gate squeezed between them.
   funnel(255,735,100,92);pins(1010,false);
@@ -47,22 +47,21 @@ function create(seed,family){
   line(LEFT,1485,205,1540);line(RIGHT,1485,305,1540);
   funnel(280,1690,100,92);rotor(255,1910,132,1.4,'pendulum');
   line(LEFT,2135,383,2220);line(127,2445,RIGHT,2345);
-  funnel(255,2590,100,90);peg(145,2740,15);peg(365,2740,15);
+  funnel(255,2590,100,90);peg(145,2740,20);peg(365,2740,20);
  }
  line(127,2990,RIGHT,2880);
  pins(3210,true,2);
  funnel(255,3460,100,78);
- // Stagger the first bumpers so there is room between them and along both walls.
- const firstRow=Math.floor(random()*2);
- places.forEach((x,i)=>{
-  const direction=i===0?1:i===places.length-1?-1:random()<.5?-1:1;
-  peg(x+direction*range(13,21),480+((i+firstRow)%2)*90+range(-5,5),12);
- });
+ // Center both opening rows and stagger the pegs to leave room for rebounds.
+ [135,215,295,375].forEach(x=>peg(x,480));
+ [111,207,303,399].forEach(x=>peg(x,570));
  // Fixed, aligned rails keep the sections readable. Variation comes from the
  // shuffled grid and moving-obstacle speeds/phases, never misaligned funnel halves.
  const catchRail={x1:LEFT,y1:CATCH,x2:RIGHT,y2:CATCH,thickness:12,kind:'catch'};rails.push(catchRail);
  for(let i=6;i>0;i--){const j=Math.floor(random()*(i+1));[places[i],places[j]]=[places[j],places[i]];}
- const marbles=places.map((x,id)=>({id,name:names[id],x,y:gate.y1-R-gate.thickness/2,vx:0,vy:0,r:R,angle:0,omega:0,finished:false,finishedAt:null,contacts:0,pegHits:0,wallHits:0,lastSpring:-10,previousY:0}));
+ // A shared sideways drift varies the first contact without giving one slot a head start.
+ const releaseDrift=(random()<.5?-1:1)*range(12,32);
+ const marbles=places.map((x,id)=>({id,name:names[id],x,y:gate.y1-R-gate.thickness/2,vx:releaseDrift,vy:0,r:R,angle:0,omega:0,finished:false,finishedAt:null,contacts:0,pegHits:0,wallHits:0,lastSpring:-10,previousY:0}));
  return {seed,family,rails,rotors,bumpers,gate,catchRail,marbles,time:0,podiumTime:null,allFinishedAt:null,finishers:[],crossings:[],leadChanges:0,leader:null,done:false,contacts:0,pairContacts:0,springHits:0};
 }
 function contact(p,s,omega=0){
