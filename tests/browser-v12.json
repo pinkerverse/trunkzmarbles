@@ -1,0 +1,328 @@
+{
+  "version": 12,
+  "races": [
+    {
+      "seed": 1892918693,
+      "family": 2,
+      "thirdTime": 23.964617,
+      "stopDelta": 0.00205,
+      "podium": [
+        "SUNNY",
+        "PINK",
+        "RED"
+      ],
+      "pegHits": [
+        7,
+        6,
+        7
+      ]
+    },
+    {
+      "seed": 2040216315,
+      "family": 0,
+      "thirdTime": 22.813835,
+      "stopDelta": 0.002832,
+      "podium": [
+        "ORANGE",
+        "LILAC",
+        "SUNNY"
+      ],
+      "pegHits": [
+        3,
+        12,
+        5
+      ]
+    },
+    {
+      "seed": 3201290322,
+      "family": 0,
+      "thirdTime": 23.573585,
+      "stopDelta": 0.001415,
+      "podium": [
+        "ORANGE",
+        "RED",
+        "LILAC"
+      ],
+      "pegHits": [
+        6,
+        2,
+        183
+      ]
+    },
+    {
+      "seed": 1607807597,
+      "family": 1,
+      "thirdTime": 23.493709,
+      "stopDelta": 0.002125,
+      "podium": [
+        "LILAC",
+        "PINK",
+        "SUNNY"
+      ],
+      "pegHits": [
+        22,
+        17,
+        3
+      ]
+    },
+    {
+      "seed": 1145159020,
+      "family": 1,
+      "thirdTime": 21.897961,
+      "stopDelta": 0.002039,
+      "podium": [
+        "SUNNY",
+        "LILAC",
+        "ORANGE"
+      ],
+      "pegHits": [
+        6,
+        23,
+        17
+      ]
+    },
+    {
+      "seed": 990066782,
+      "family": 1,
+      "thirdTime": 23.134244,
+      "stopDelta": 0.003256,
+      "podium": [
+        "LILAC",
+        "BLUE",
+        "RED"
+      ],
+      "pegHits": [
+        4,
+        7,
+        11
+      ]
+    },
+    {
+      "seed": 1337536770,
+      "family": 2,
+      "thirdTime": 23.949148,
+      "stopDelta": 0.000852,
+      "podium": [
+        "PINK",
+        "MINT",
+        "SUNNY"
+      ],
+      "pegHits": [
+        8,
+        5,
+        10
+      ]
+    },
+    {
+      "seed": 240317473,
+      "family": 1,
+      "thirdTime": 22.570953,
+      "stopDelta": 0.004047,
+      "podium": [
+        "RED",
+        "ORANGE",
+        "LILAC"
+      ],
+      "pegHits": [
+        10,
+        8,
+        10
+      ]
+    },
+    {
+      "seed": 1176763284,
+      "family": 2,
+      "thirdTime": 23.117825,
+      "stopDelta": 0.003009,
+      "podium": [
+        "RED",
+        "PINK",
+        "ORANGE"
+      ],
+      "pegHits": [
+        14,
+        7,
+        6
+      ]
+    },
+    {
+      "seed": 1192723263,
+      "family": 0,
+      "thirdTime": 25.219896,
+      "stopDelta": 0.000937,
+      "podium": [
+        "SUNNY",
+        "RED",
+        "MINT"
+      ],
+      "pegHits": [
+        20,
+        74,
+        18
+      ]
+    },
+    {
+      "seed": 393095457,
+      "family": 1,
+      "thirdTime": 20.053354,
+      "stopDelta": 0.000813,
+      "podium": [
+        "PINK",
+        "SUNNY",
+        "LILAC"
+      ],
+      "pegHits": [
+        2,
+        7,
+        9
+      ]
+    },
+    {
+      "seed": 678442654,
+      "family": 1,
+      "thirdTime": 23.799552,
+      "stopDelta": 0.000448,
+      "podium": [
+        "BLUE",
+        "ORANGE",
+        "LILAC"
+      ],
+      "pegHits": [
+        12,
+        12,
+        13
+      ]
+    },
+    {
+      "seed": 3359662003,
+      "family": 0,
+      "thirdTime": 24.301292,
+      "stopDelta": 0.002875,
+      "podium": [
+        "LILAC",
+        "ORANGE",
+        "SUNNY"
+      ],
+      "pegHits": [
+        3,
+        9,
+        21
+      ]
+    },
+    {
+      "seed": 572399345,
+      "family": 0,
+      "thirdTime": 22.515072,
+      "stopDelta": 0.001595,
+      "podium": [
+        "BLUE",
+        "RED",
+        "SUNNY"
+      ],
+      "pegHits": [
+        6,
+        7,
+        12
+      ]
+    },
+    {
+      "seed": 2842037447,
+      "family": 2,
+      "thirdTime": 23.638378,
+      "stopDelta": 0.003288,
+      "podium": [
+        "RED",
+        "MINT",
+        "LILAC"
+      ],
+      "pegHits": [
+        7,
+        6,
+        7
+      ]
+    },
+    {
+      "seed": 4115676830,
+      "family": 2,
+      "thirdTime": 24.768773,
+      "stopDelta": 0.002061,
+      "podium": [
+        "PINK",
+        "LILAC",
+        "MINT"
+      ],
+      "pegHits": [
+        8,
+        5,
+        7
+      ]
+    },
+    {
+      "seed": 4115074457,
+      "family": 2,
+      "thirdTime": 23.869402,
+      "stopDelta": 0.001432,
+      "podium": [
+        "RED",
+        "ORANGE",
+        "LILAC"
+      ],
+      "pegHits": [
+        7,
+        6,
+        6
+      ]
+    },
+    {
+      "seed": 2041704343,
+      "family": 1,
+      "thirdTime": 23.991382,
+      "stopDelta": 0.000284,
+      "podium": [
+        "SUNNY",
+        "RED",
+        "BLUE"
+      ],
+      "pegHits": [
+        12,
+        28,
+        21
+      ]
+    },
+    {
+      "seed": 2089408495,
+      "family": 1,
+      "thirdTime": 24.874362,
+      "stopDelta": 0.000638,
+      "podium": [
+        "BLUE",
+        "ORANGE",
+        "MINT"
+      ],
+      "pegHits": [
+        8,
+        28,
+        142
+      ]
+    },
+    {
+      "seed": 388346324,
+      "family": 2,
+      "thirdTime": 24.227275,
+      "stopDelta": 0.001891,
+      "podium": [
+        "PINK",
+        "MINT",
+        "RED"
+      ],
+      "pegHits": [
+        7,
+        6,
+        6
+      ]
+    }
+  ],
+  "consoleWarnings": [],
+  "consoleErrors": [],
+  "notes": "Real preview browser races. Times rounded to six decimals. Countdown placement visually inspected at 390x844; each automated start checked a stationary queue, present gate and at least 6 logical units of digit clearance. All races froze at top three."
+}

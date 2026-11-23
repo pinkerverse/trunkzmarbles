@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='trunkz-marbles-v11';
+const CACHE='trunkz-marbles-v12';
 const ROOT=new URL('./',self.location.href);
 const ASSETS=['./','./index.html','./physics.js','./game.js','./manifest.webmanifest','./assets/icon.svg',...['sunny','pink','blue','lilac','red','orange','mint'].map(k=>`./assets/marble-${k}.svg`)];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
