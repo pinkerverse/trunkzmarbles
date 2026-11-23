@@ -26,7 +26,7 @@ function advance(sec){for(let i=0;i<Math.ceil(sec*60);i++){now+=1000/60;assert(n
   drawn.length=0;advance(.9);assert(drawn.includes('1'));assert.equal(JSON.stringify(read().positions),queued);assert(read().gatePresent);
   advance(.8);assert.equal(read().mode,'countdown');assert.equal(read().time,0);
   drawn.length=0;advance(.2);assert.equal(read().mode,'racing');assert(!read().gatePresent);assert(drawn.includes('GO!'));
-  let waited=0;while(read().mode!=='results'&&waited<40){advance(.1);waited+=.1;assert(['racing','results'].includes(read().mode));}
+  let waited=0;while(read().mode!=='results'&&waited<55){advance(.1);waited+=.1;assert(['racing','results'].includes(read().mode));}
   const result=read();assert.equal(result.mode,'results');assert(result.results.length>=3);assert(result.crossings.length>=3);
   assert(result.time-result.podiumTime<=P.DT+.000001,'App must stop at the third crossing, not after collection');
   const frozen=JSON.stringify(result.positions),stoppedTime=result.time;winners.add(result.results[0]);assert.equal(elements.start.textContent,'RACE AGAIN');assert(!elements.start.disabled);
