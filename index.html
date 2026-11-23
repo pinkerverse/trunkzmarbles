@@ -21,11 +21,11 @@ body:not([data-mode="ready"]) #picks{visibility:hidden}.sr-only{position:absolut
 <canvas id="scene" role="img" aria-label="Seven original TRUNKZ marbles on a black and white marble run"></canvas>
 <div id="picks" role="group" aria-label="Pick your marble"></div><div id="controls"><button id="start" disabled>LOADING MARBLES</button></div>
 <div id="status" class="sr-only" role="status" aria-live="polite">Loading the original marble artwork.</div></main>
-<script src="./physics.js?v=15"></script><script src="./game.js?v=15"></script>
+<script src="./physics.js?v=16"></script><script src="./game.js?v=16"></script>
 <script>
 if('serviceWorker'in navigator&&location.protocol!=='file:'){
 let hadController=!!navigator.serviceWorker.controller;
-navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadController){hadController=true;return;}const reload=()=>{if(['ready','results'].includes(document.body.dataset.mode))location.reload();else setTimeout(reload,500);};reload();});
+navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadController){hadController=true;return;}const reload=()=>{if(['loading','ready','results'].includes(document.body.dataset.mode))location.reload();else setTimeout(reload,500);};reload();});
 window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}));
 }
 </script></body></html>

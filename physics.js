@@ -15,12 +15,16 @@ function create(seed,family){
  const peg=(x,y,r=12,bank=false)=>bumpers.push({id:bumpers.length,x,y,r,bank,spring:true,flash:-10});
  // Staggered lanes leave 48 px between 12 px pegs: a 42 px marble fits,
  // but cannot free-fall through several aligned columns. The entry collects the field.
- const pins=(y,collect=true,rows=3)=>{
+ const pins=(y,collect=true,rows=3,bank=true)=>{
   if(collect)funnel(248,y-140,100,62);
   for(let row=0;row<rows;row++){
    const xs=row%2?[147,219,291,363]:[111,183,255,327,399];
-   xs.forEach(x=>peg(x,y+row*80,12,true));
+   xs.forEach(x=>peg(x,y+row*80,12,bank));
   }
+ };
+ const largePins=(y)=>{
+  [145,255,365].forEach(x=>peg(x,y,22));
+  [200,310].forEach(x=>peg(x,y+90,22));
  };
  // The full-width gate disappears on GO, releasing all seven from the same height.
  const gate={x1:LEFT,y1:336,x2:RIGHT,y2:336,thickness:8};
@@ -30,7 +34,7 @@ function create(seed,family){
   line(LEFT,1055,383,1152);pins(1400);
   funnel(255,1700,100,96);rotor(255,1840,135,1.3,'pendulum');
   line(127,2190,RIGHT,2080);funnel(255,2350,100,92);
-  peg(130,2600,22);peg(255,2560,22);peg(380,2600,22);
+  largePins(2530);
   line(LEFT,2700,205,2752);line(RIGHT,2700,305,2752);
  }else if(family===1){
   // Collect first, then rock the pack. The later fork has a real central entry.
@@ -39,7 +43,7 @@ function create(seed,family){
   line(255,1880,140,2000);line(255,1880,370,2000);
   line(LEFT,2140,205,2200);line(RIGHT,2140,305,2200);
   rotor(255,2340,180,-1.45);funnel(255,2520,100,90);
-  peg(145,2760,20);peg(365,2760,20);
+  largePins(2730);
  }else{
   // The funnel is the pegboard entry; omit the old gate squeezed between them.
   funnel(255,735,100,92);pins(1010,false);
@@ -47,14 +51,12 @@ function create(seed,family){
   line(LEFT,1485,205,1540);line(RIGHT,1485,305,1540);
   funnel(280,1690,100,92);rotor(255,1910,132,1.4,'pendulum');
   line(LEFT,2135,383,2220);line(127,2445,RIGHT,2345);
-  funnel(255,2590,100,90);peg(145,2740,20);peg(365,2740,20);
+  funnel(255,2590,100,90);largePins(2740);
  }
  line(127,2990,RIGHT,2880);
  pins(3210,true,2);
  funnel(255,3460,100,78);
- // Center both opening rows and stagger the pegs to leave room for rebounds.
- [135,215,295,375].forEach(x=>peg(x,480));
- [111,207,303,399].forEach(x=>peg(x,570));
+ pins(480,false,2,false);
  // Fixed, aligned rails keep the sections readable. Variation comes from the
  // shuffled grid and moving-obstacle speeds/phases, never misaligned funnel halves.
  const catchRail={x1:LEFT,y1:CATCH,x2:RIGHT,y2:CATCH,thickness:12,kind:'catch'};rails.push(catchRail);
