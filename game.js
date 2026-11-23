@@ -4,14 +4,14 @@ const P=window.TRUNKZPhysics,{W,H,LEFT,RIGHT,FINISH,CATCH,WALL,clamp}=P;
 const $=id=>document.getElementById(id),canvas=$('scene'),ctx=canvas.getContext('2d',{alpha:false});
 const keys=['sunny','pink','blue','lilac','red','orange','mint'];
 const sprites=keys.map(key=>{const im=new Image();im.src=`./assets/marble-${key}.svg`;return im;});
-let world,mode='loading',chosen=-1,camera=0,cameraTarget=0,goTime=0;
+let world,mode='loading',chosen=-1,camera=0,cameraTarget=0,goTime=0,countdown=0,lastBeat=0;
 let lastFrame=0,accumulator=0,audio=null,previousFamily=-1,raceNumber=0;
 const status=s=>$('status').textContent=s;
 function setMode(next){mode=next;document.body.dataset.mode=next;$('start').disabled=!['ready','results'].includes(next);}
 function newRace(){
 const seed=crypto.getRandomValues(new Uint32Array(1))[0];
 const family=previousFamily<0?seed%3:(previousFamily+1+seed%2)%3;previousFamily=family;
-world=P.create(seed,family);camera=0;cameraTarget=0;goTime=0;accumulator=0;raceNumber++;
+world=P.create(seed,family);camera=0;cameraTarget=0;goTime=0;countdown=0;lastBeat=0;accumulator=0;raceNumber++;
 chosen=-1;$('start').textContent='START RACE';setMode('ready');status('Pick a marble. Which one will win?');
 $('picks').replaceChildren(...world.marbles.map(p=>{const b=document.createElement('button');b.style.left=`${(p.x-27)/W*100}%`;b.style.top=`${(p.y-28)/H*100}%`;b.setAttribute('aria-label',`Pick ${p.name}`);b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>select(p.id));return b;}));
 }
@@ -20,10 +20,16 @@ function unlockAudio(){try{audio=audio||new(window.AudioContext||window.webkitAu
 function tone(f,d=.12,offset=0,volume=.055){if(!audio)return;try{const t=audio.currentTime+offset,o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(volume,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+d+.01);}catch(_){}}
 function start(){
 if(mode==='results'){newRace();return;}if(mode!=='ready')return;
-unlockAudio();goTime=0;setMode('racing');tone(720,.18);tone(960,.2,.10);status('Go! The marbles are racing.');
+unlockAudio();countdown=3;lastBeat=3;setMode('countdown');tone(360,.12);status('3 — get ready!');
 }
 function results(){setMode('results');$('start').textContent='RACE AGAIN';[523,659,784,1047].forEach((f,i)=>tone(f,.18,i*.1));status(`${world.finishers.slice(0,3).map((p,i)=>`${i+1}: ${p.name}`).join('. ')}. Race time ${(world.podiumTime||world.time).toFixed(1)} seconds. Race Again returns to a new starting platform.`);}
 function update(dt){
+ if(mode==='countdown'){
+  countdown=Math.max(0,countdown-dt);const beat=Math.ceil(countdown);
+  if(beat>0&&beat!==lastBeat){lastBeat=beat;tone(360+(3-beat)*100,.12);status(`${beat} — get ready!`);}
+  if(countdown===0){goTime=0;setMode('racing');tone(720,.18);tone(960,.2,.10);status('GO! The marbles are racing.');}
+  return;
+ }
  if(mode!=='racing')return;
  goTime+=dt;P.step(world,dt);
  const leader=world.finishers.length?FINISH:Math.max(...world.marbles.map(p=>p.y));
@@ -43,7 +49,7 @@ function background(){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);line(LEFT,0,LEF
 function course(){
  ctx.save();ctx.translate(0,-camera);
  for(const s of world.rails)line(s.x1,s.y1,s.x2,s.y2,s.thickness);
- if(mode==='ready'){const g=world.gate;line(g.x1,g.y1,g.x2,g.y2,g.thickness);}
+ if(mode==='ready'||mode==='countdown'){const g=world.gate;line(g.x1,g.y1,g.x2,g.y2,g.thickness);}
  for(const s of P.movingSegments(world)){line(s.x1,s.y1,s.x2,s.y2,s.thickness);ctx.beginPath();ctx.arc(s.cx,s.cy,5,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.stroke();}
  for(const b of world.bumpers){ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();}
  const tile=(RIGHT-LEFT)/24;for(let i=0;i<24;i++)for(let j=0;j<2;j++){ctx.fillStyle=(i+j)%2?'#fff':'#111';ctx.fillRect(LEFT+i*tile,FINISH+j*tile,tile+.2,tile+.2);}
@@ -52,14 +58,21 @@ function course(){
  ctx.restore();
 }
 function ready(){
- box(59,112,392,111,0);text('PICK A MARBLE',255,155,38);text('Which one will win?',255,201,21,'#555',600);
- for(const p of world.marbles)text(p.name,p.x,p.y-39,11,'#333',800);
+ box(59,103,392,94,0);text('PICK A MARBLE',255,130,35);text('Which one will win?',255,169,20,'#555',600);
+ if(mode==='ready')for(const p of world.marbles)text(p.name,p.x,p.y-39,11,'#333',800);
+}
+function countdownArt(){
+ const digit=Math.max(1,Math.ceil(countdown)),elapsed=digit-countdown;
+ const scale=1+.08*Math.exp(-elapsed*8);
+ ctx.save();ctx.translate(255,228);ctx.scale(scale,scale);text(String(digit),0,0,78);ctx.restore();
 }
 function raceHeader(){
+ if(goTime<.65){ready();const scale=1+.08*Math.exp(-goTime*8);ctx.save();ctx.translate(255,228);ctx.scale(scale,scale);text('GO!',0,0,78);ctx.restore();return;}
+
  box(83,105,344,74,18);text(P.families[world.family].toUpperCase(),255,121,14,'#555',800);
  const lead=world.finishers[0]||world.marbles.reduce((a,b)=>a.y>b.y?a:b);
  text(`${lead.name} ${world.finishers.length?'FINISHED FIRST':'LEADS'}`,255,154,24);
- if(goTime<.65){const scale=1+.25*Math.exp(-goTime*6);ctx.save();ctx.translate(255,233);ctx.scale(scale,scale);text('GO!',0,0,99);ctx.restore();}
+
 }
 function podium(){
 background();text('WINNER!',255,163,53);const winners=world.finishers.slice(0,3),winner=winners[0];
@@ -68,9 +81,9 @@ const cols=[{p:winners[1],x:95,y:628,rank:2},{p:winner,x:207,y:581,rank:1},{p:wi
 for(const c of cols){const x=c.x+48;box(c.x,c.y,96,721-c.y,14,c.rank===1?'#111':'#f2f2f2',c.rank===1?null:'#111');marble(c.p.id,x,c.y-45,c.rank===1?37:32);text(String(c.rank),x,c.y+(c.rank===3?22:30),26,c.rank===1?'#fff':'#111');text(c.p.name,x,699,14,c.rank===1?'#fff':'#111');}text('NEW COURSE. NEW CHANCE.',255,828,14,'#555',700);
 }
 function resize(){const rect=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,3);const w=Math.round(rect.width*d),h=Math.round(rect.height*d);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}}
-function draw(){resize();ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);if(!world){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);text('LOADING MARBLES',255,440,25);return;}if(mode==='results')podium();else{background();course();if(mode==='ready')ready();if(mode==='racing')raceHeader();}}
+function draw(){resize();ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);if(!world){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);text('LOADING MARBLES',255,440,25);return;}if(mode==='results')podium();else{background();course();if(mode==='ready'||mode==='countdown')ready();if(mode==='countdown')countdownArt();if(mode==='racing')raceHeader();}}
 function frame(now){const delta=lastFrame?Math.min((now-lastFrame)/1000,.05):0;lastFrame=now;accumulator+=delta;while(accumulator>=P.DT){update(P.DT);accumulator-=P.DT;}draw();if(new URLSearchParams(location.search).has('qa'))canvas.dataset.race=JSON.stringify(window.TRUNKZ_DEBUG.state());requestAnimationFrame(frame);}
 $('start').addEventListener('click',start);document.addEventListener('visibilitychange',()=>{lastFrame=0;accumulator=0;});
-window.TRUNKZ_DEBUG={state:()=>({version:11,mode,seed:world?.seed,family:world?.family,raceNumber,chosen,time:world?.time,podiumTime:world?.podiumTime,allFinishedAt:world?.allFinishedAt,springHits:world?.springHits,gatePresent:mode==='ready',catchY:CATCH,camera,leadChanges:world?.leadChanges,contacts:world?.contacts,pairContacts:world?.pairContacts,results:world?.finishers.map(p=>p.name),crossings:world?.crossings,positions:world?.marbles.map(p=>({name:p.name,x:p.x,y:p.y,angle:p.angle,contacts:p.contacts,finished:p.finished}))})};
+window.TRUNKZ_DEBUG={state:()=>({version:12,mode,seed:world?.seed,family:world?.family,raceNumber,chosen,time:world?.time,podiumTime:world?.podiumTime,allFinishedAt:world?.allFinishedAt,springHits:world?.springHits,gatePresent:mode==='ready'||mode==='countdown',countdown,numberBottom:228+78*1.08/2,marbleTop:world?Math.min(...world.marbles.map(p=>p.y-p.r)):null,catchY:CATCH,camera,leadChanges:world?.leadChanges,contacts:world?.contacts,pairContacts:world?.pairContacts,results:world?.finishers.map(p=>p.name),crossings:world?.crossings,positions:world?.marbles.map(p=>({name:p.name,x:p.x,y:p.y,angle:p.angle,contacts:p.contacts,pegHits:p.pegHits,finished:p.finished}))})};
 draw();Promise.all(sprites.map(im=>im.decode())).then(()=>{newRace();requestAnimationFrame(frame);}).catch(()=>{status('Could not load the marble artwork. Please reopen the app online.');$('start').disabled=true;$('start').textContent='REOPEN TO LOAD';});
 })();

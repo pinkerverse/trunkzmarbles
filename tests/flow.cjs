@@ -18,8 +18,14 @@ function advance(sec){for(let i=0;i<Math.ceil(sec*60);i++){now+=1000/60;assert(n
   assert.equal(read().mode,'ready');assert(read().gatePresent);const family=read().family;families.add(family);
   drawn.length=0;advance(.02);assert(drawn.includes('PICK A MARBLE'));assert(drawn.includes('Which one will win?'));assert(!drawn.some(s=>/TRUNKZ MARBLES|7 MARBLES|Tap a marble|IS YOUR PICK/.test(s)));
   const pick=n%7;elements.picks.children[pick].listeners.click();assert.equal(read().chosen,pick);assert.equal(elements.picks.children[pick].attrs['aria-pressed'],'true');
-  elements.start.listeners.click();assert.equal(read().mode,'racing');assert(!read().gatePresent);assert.equal(read().time,0);assert(elements.start.disabled);
-  drawn.length=0;advance(.02);assert(drawn.includes('GO!'));assert(!drawn.includes('3'));
+  const queued=JSON.stringify(read().positions);
+  elements.start.listeners.click();assert.equal(read().mode,'countdown');assert(read().gatePresent);assert.equal(read().time,0);assert(elements.start.disabled);
+  assert(read().numberBottom<=read().marbleTop-6,'Countdown must stay above every marble');
+  drawn.length=0;advance(.6);assert(drawn.includes('3'));assert.equal(read().time,0);
+  drawn.length=0;advance(.6);assert(drawn.includes('2'));assert.equal(read().mode,'countdown');
+  drawn.length=0;advance(.9);assert(drawn.includes('1'));assert.equal(JSON.stringify(read().positions),queued);assert(read().gatePresent);
+  advance(.8);assert.equal(read().mode,'countdown');assert.equal(read().time,0);
+  drawn.length=0;advance(.2);assert.equal(read().mode,'racing');assert(!read().gatePresent);assert(drawn.includes('GO!'));
   let waited=0;while(read().mode!=='results'&&waited<40){advance(.1);waited+=.1;assert(['racing','results'].includes(read().mode));}
   const result=read();assert.equal(result.mode,'results');assert(result.results.length>=3);assert(result.crossings.length>=3);
   assert(result.time-result.podiumTime<=P.DT+.000001,'App must stop at the third crossing, not after collection');
@@ -27,5 +33,5 @@ function advance(sec){for(let i=0;i<Math.ceil(sec*60);i++){now+=1000/60;assert(n
   advance(2);assert.equal(read().time,stoppedTime);assert.equal(JSON.stringify(read().positions),frozen);assert.equal(read().mode,'results');
   elements.start.listeners.click();assert.equal(read().mode,'ready');assert.notEqual(read().family,family);assert.equal(read().chosen,-1);assert.equal(read().time,0);assert.equal(elements.start.textContent,'START RACE');
  }
- assert.equal(families.size,3);assert(winners.size>=5);console.log(`PASS: 30 full lifecycles; ${families.size} families; ${winners.size} winning colors; minimal labels, immediate GO, third-crossing stop, frozen results and replay.`);
+ assert.equal(families.size,3);assert(winners.size>=5);console.log(`PASS: 30 full lifecycles; ${families.size} families; ${winners.size} winning colors; clear 3–2–1 above the fixed queue, GO release, third-crossing stop, frozen results and replay.`);
 })().catch(e=>{console.error(e);process.exitCode=1;});
