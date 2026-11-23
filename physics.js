@@ -1,7 +1,7 @@
 /* TRUNKZ: fixed-step circle/segment physics, shared by app and regression tests. */
 (function(root){
 'use strict';
-const W=540,H=960,R=21,LEFT=43,RIGHT=467,FINISH=3260,CATCH=FINISH+136,WALL=7,GRAVITY=500,MAX_FALL=480,MAX_BOUNCE=250,DT=1/240;
+const W=540,H=960,R=21,LEFT=43,RIGHT=467,FINISH=3620,CATCH=FINISH+136,WALL=7,GRAVITY=500,MAX_FALL=480,MAX_BOUNCE=250,DT=1/240;
 const names=['SUNNY','PINK','BLUE','LILAC','RED','ORANGE','MINT'];
 const families=['Switchback Springs','Pinball Parade','Rolling Rivals'];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -15,18 +15,16 @@ function create(seed,family){
  const peg=(x,y,r=12,bank=false)=>bumpers.push({id:bumpers.length,x,y,r,bank,spring:true,flash:-10});
  // Staggered lanes leave 48 px between 12 px pegs: a 42 px marble fits,
  // but cannot free-fall through several aligned columns. The entry collects the field.
- const pins=(y,collect=true)=>{
+ const pins=(y,collect=true,rows=3)=>{
   if(collect)funnel(248,y-140,100,62);
-  for(let row=0;row<3;row++){
+  for(let row=0;row<rows;row++){
    const xs=row%2?[147,219,291,363]:[111,183,255,327,399];
    xs.forEach(x=>peg(x,y+row*80,12,true));
   }
  };
- // All seven wait on this real shelf; the vertical stopper exists until GO only.
- const startRail={x1:LEFT,y1:320,x2:410,y2:370,thickness:10,kind:'start'};rails.push(startRail);
- const gate={x1:399,y1:299,x2:399,y2:374,thickness:8,kind:'gate'};
- // Shared landing ramp receives the release, gathers the field and reverses direction.
- line(127,583,RIGHT,482);
+ // The full-width gate disappears on GO, releasing all seven from rest.
+ const gate={x1:LEFT,y1:336,x2:RIGHT,y2:336,thickness:8};
+ const places=[93,147,201,255,309,363,417];
  if(family===0){
   funnel(255,735,100,96);rotor(255,890,150,.85,'shutter');
   line(LEFT,1055,383,1152);pins(1400);
@@ -51,15 +49,21 @@ function create(seed,family){
   line(LEFT,2135,383,2220);line(127,2445,RIGHT,2345);
   funnel(255,2590,100,90);peg(145,2740,15);peg(365,2740,15);
  }
- line(127,2990,RIGHT,2880);funnel(255,3100,100,78);
+ line(127,2990,RIGHT,2880);
+ pins(3210,true,2);
+ funnel(255,3460,100,78);
+ // Stagger the first bumpers so there is room between them and along both walls.
+ const firstRow=Math.floor(random()*2);
+ places.forEach((x,i)=>{
+  const direction=i===0?1:i===places.length-1?-1:random()<.5?-1:1;
+  peg(x+direction*range(13,21),480+((i+firstRow)%2)*90+range(-5,5),12);
+ });
  // Fixed, aligned rails keep the sections readable. Variation comes from the
  // shuffled grid and moving-obstacle speeds/phases, never misaligned funnel halves.
  const catchRail={x1:LEFT,y1:CATCH,x2:RIGHT,y2:CATCH,thickness:12,kind:'catch'};rails.push(catchRail);
- const places=[86,134,182,230,278,326,374];
  for(let i=6;i>0;i--){const j=Math.floor(random()*(i+1));[places[i],places[j]]=[places[j],places[i]];}
- const slope=(startRail.y2-startRail.y1)/(startRail.x2-startRail.x1);
- const marbles=places.map((x,id)=>({id,name:names[id],x,y:startRail.y1+(x-LEFT)*slope-(R+startRail.thickness/2)*Math.sqrt(1+slope*slope),vx:0,vy:0,r:R,angle:0,omega:0,finished:false,finishedAt:null,contacts:0,pegHits:0,wallHits:0,lastSpring:-10,previousY:0}));
- return {seed,family,rails,rotors,bumpers,startRail,gate,catchRail,marbles,time:0,podiumTime:null,allFinishedAt:null,finishers:[],crossings:[],leadChanges:0,leader:null,done:false,contacts:0,pairContacts:0,springHits:0};
+ const marbles=places.map((x,id)=>({id,name:names[id],x,y:gate.y1-R-gate.thickness/2,vx:0,vy:0,r:R,angle:0,omega:0,finished:false,finishedAt:null,contacts:0,pegHits:0,wallHits:0,lastSpring:-10,previousY:0}));
+ return {seed,family,rails,rotors,bumpers,gate,catchRail,marbles,time:0,podiumTime:null,allFinishedAt:null,finishers:[],crossings:[],leadChanges:0,leader:null,done:false,contacts:0,pairContacts:0,springHits:0};
 }
 function contact(p,s,omega=0){
  const dx=s.x2-s.x1,dy=s.y2-s.y1,l2=dx*dx+dy*dy;if(l2<.001)return false;

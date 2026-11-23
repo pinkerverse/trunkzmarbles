@@ -18,7 +18,8 @@ function advance(sec){for(let i=0;i<Math.ceil(sec*60);i++){now+=1000/60;assert(n
   assert.equal(read().mode,'ready');assert(read().gatePresent);const family=read().family;families.add(family);
   drawn.length=0;advance(.02);assert(drawn.includes('PICK A MARBLE'));assert(drawn.includes('Which one will win?'));assert(!drawn.some(s=>/TRUNKZ MARBLES|7 MARBLES|Tap a marble|IS YOUR PICK/.test(s)));
   const pick=n%7;elements.picks.children[pick].listeners.click();assert.equal(read().chosen,pick);assert.equal(elements.picks.children[pick].attrs['aria-pressed'],'true');
-  const queued=JSON.stringify(read().positions);
+  const lineup=read().positions,queued=JSON.stringify(lineup);
+  assert(lineup.every(p=>p.y===lineup[0].y),'All seven must start at the same height');
   elements.start.listeners.click();assert.equal(read().mode,'countdown');assert(read().gatePresent);assert.equal(read().time,0);assert(elements.start.disabled);
   assert(read().numberBottom<=read().marbleTop-6,'Countdown must stay above every marble');
   drawn.length=0;advance(.6);assert(drawn.includes('3'));assert.equal(read().time,0);
@@ -26,7 +27,11 @@ function advance(sec){for(let i=0;i<Math.ceil(sec*60);i++){now+=1000/60;assert(n
   drawn.length=0;advance(.9);assert(drawn.includes('1'));assert.equal(JSON.stringify(read().positions),queued);assert(read().gatePresent);
   advance(.8);assert.equal(read().mode,'countdown');assert.equal(read().time,0);
   drawn.length=0;advance(.2);assert.equal(read().mode,'racing');assert(!read().gatePresent);assert(drawn.includes('GO!'));
+  const dropping=read().positions;
+  assert(dropping.every((p,i)=>p.x===lineup[i].x&&p.y>lineup[i].y&&p.y===dropping[0].y),'All seven must fall together before hitting obstacles');
+  drawn.length=0;advance(.02);assert(!drawn.includes('PICK A MARBLE'),'The pick banner must clear at GO');
   let waited=0;while(read().mode!=='results'&&waited<40){advance(.1);waited+=.1;assert(['racing','results'].includes(read().mode));}
+  assert(!drawn.some(s=>/LEADS|FINISHED FIRST/.test(s)),'The running race must be free of ranking banners');
   const result=read();assert.equal(result.mode,'results');assert(result.results.length>=3);assert(result.crossings.length>=3);
   assert(result.time-result.podiumTime<=P.DT+.000001,'App must stop at the third crossing, not after collection');
   const frozen=JSON.stringify(result.positions),stoppedTime=result.time;winners.add(result.results[0]);assert.equal(elements.start.textContent,'RACE AGAIN');assert(!elements.start.disabled);

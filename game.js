@@ -61,7 +61,7 @@ function course(){
  ctx.restore();
  walls();
  ctx.save();ctx.translate(0,-camera);
- for(const p of world.marbles){marble(p.id,p.x,p.y,p.r,p.angle,chosen===p.id);if(p.finished){box(p.x-11,p.y-45,22,20,7,'#111');text(String(world.finishers.indexOf(p)+1),p.x,p.y-35,13,'#fff');}}
+ for(const p of world.marbles)marble(p.id,p.x,p.y,p.r,p.angle,chosen===p.id);
  ctx.restore();
 }
 function ready(){
@@ -73,13 +73,9 @@ function countdownArt(){
  const scale=1+.08*Math.exp(-elapsed*8);
  ctx.save();ctx.translate(255,228);ctx.scale(scale,scale);text(String(digit),0,0,78);ctx.restore();
 }
-function raceHeader(){
- if(goTime<.65){ready();const scale=1+.08*Math.exp(-goTime*8);ctx.save();ctx.translate(255,228);ctx.scale(scale,scale);text('GO!',0,0,78);ctx.restore();return;}
-
- box(83,105,344,74,18);text(P.families[world.family].toUpperCase(),255,121,14,'#555',800);
- const lead=world.finishers[0]||world.marbles.reduce((a,b)=>a.y>b.y?a:b);
- text(`${lead.name} ${world.finishers.length?'FINISHED FIRST':'LEADS'}`,255,154,24);
-
+function goArt(){
+ const scale=1+.08*Math.exp(-goTime*8);
+ ctx.save();ctx.translate(255,228);ctx.scale(scale,scale);text('GO!',0,0,78);ctx.restore();
 }
 function podium(){
 walls();text('WINNER!',255,163,53);const winners=world.finishers.slice(0,3),winner=winners[0];
@@ -88,9 +84,9 @@ const cols=[{p:winners[1],x:95,y:628,rank:2},{p:winner,x:207,y:581,rank:1},{p:wi
 for(const c of cols){const x=c.x+48;box(c.x,c.y,96,721-c.y,14,c.rank===1?'#111':'#f2f2f2',c.rank===1?null:'#111');marble(c.p.id,x,c.y-45,c.rank===1?37:32);text(String(c.rank),x,c.y+(c.rank===3?22:30),26,c.rank===1?'#fff':'#111');text(c.p.name,x,699,14,c.rank===1?'#fff':'#111');}text('NEW COURSE. NEW CHANCE.',255,828,14,'#555',700);
 }
 function resize(){const rect=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,3);const w=Math.round(rect.width*d),h=Math.round(rect.height*d);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}}
-function draw(){resize();ctx.setTransform(canvas.width/W,0,0,canvas.height/H,COURSE_OFFSET*canvas.width/W,0);clearScene();if(!world){text('LOADING MARBLES',255,440,25);return;}if(mode==='results')podium();else{course();if(mode==='ready'||mode==='countdown')ready();if(mode==='countdown')countdownArt();if(mode==='racing')raceHeader();}}
+function draw(){resize();ctx.setTransform(canvas.width/W,0,0,canvas.height/H,COURSE_OFFSET*canvas.width/W,0);clearScene();if(!world){text('LOADING MARBLES',255,440,25);return;}if(mode==='results')podium();else{course();if(mode==='ready'||mode==='countdown')ready();if(mode==='countdown')countdownArt();if(mode==='racing'&&goTime<.65)goArt();}}
 function frame(now){const delta=lastFrame?Math.min((now-lastFrame)/1000,.05):0;lastFrame=now;accumulator+=delta;while(accumulator>=P.DT){update(P.DT);accumulator-=P.DT;}draw();if(new URLSearchParams(location.search).has('qa'))canvas.dataset.race=JSON.stringify(window.TRUNKZ_DEBUG.state());requestAnimationFrame(frame);}
 $('start').addEventListener('click',start);document.addEventListener('visibilitychange',()=>{lastFrame=0;accumulator=0;});
-window.TRUNKZ_DEBUG={state:()=>({version:13,mode,seed:world?.seed,family:world?.family,raceNumber,chosen,time:world?.time,podiumTime:world?.podiumTime,allFinishedAt:world?.allFinishedAt,springHits:world?.springHits,gatePresent:mode==='ready'||mode==='countdown',countdown,numberBottom:228+78*1.08/2,marbleTop:world?Math.min(...world.marbles.map(p=>p.y-p.r)):null,catchY:CATCH,camera,leadChanges:world?.leadChanges,contacts:world?.contacts,pairContacts:world?.pairContacts,results:world?.finishers.map(p=>p.name),crossings:world?.crossings,positions:world?.marbles.map(p=>({name:p.name,x:p.x,y:p.y,angle:p.angle,contacts:p.contacts,pegHits:p.pegHits,finished:p.finished}))})};
+window.TRUNKZ_DEBUG={state:()=>({version:14,mode,seed:world?.seed,family:world?.family,raceNumber,chosen,time:world?.time,podiumTime:world?.podiumTime,allFinishedAt:world?.allFinishedAt,springHits:world?.springHits,gatePresent:mode==='ready'||mode==='countdown',countdown,numberBottom:228+78*1.08/2,marbleTop:world?Math.min(...world.marbles.map(p=>p.y-p.r)):null,catchY:CATCH,camera,leadChanges:world?.leadChanges,contacts:world?.contacts,pairContacts:world?.pairContacts,results:world?.finishers.map(p=>p.name),crossings:world?.crossings,positions:world?.marbles.map(p=>({name:p.name,x:p.x,y:p.y,angle:p.angle,contacts:p.contacts,pegHits:p.pegHits,finished:p.finished}))})};
 draw();Promise.all(sprites.map(im=>im.decode())).then(()=>{newRace();requestAnimationFrame(frame);}).catch(()=>{status('Could not load the marble artwork. Please reopen the app online.');$('start').disabled=true;$('start').textContent='REOPEN TO LOAD';});
 })();
