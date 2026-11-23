@@ -11,9 +11,17 @@ bounce.marbles.forEach((p,i)=>{p.x=255;p.y=-1000-i*100;p.vx=0;p.vy=0;});
 Object.assign(bounce.marbles[0],{x:255,y:469.5,vy:200});P.step(bounce);
 assert(bounce.marbles[0].vy<=-180&&bounce.marbles[0].vy>=-250);assert.equal(bounce.springHits,1);
 const report=[];
-for(let family=0;family<3;family++){
+const layouts=new Set(),racesPerCourse=100;
+assert.equal(P.families.length,10);
+for(let family=0;family<P.families.length;family++){
+ const {rails,rotors,bumpers}=P.create(1,family);
+ layouts.add(JSON.stringify([rails,rotors.map(({x,y,l,type})=>({x,y,l,type})),bumpers]));
+ assert.deepEqual(bumpers.filter(p=>p.y<735).map(({x,y})=>[x,y]),[
+  ...[111,183,255,327,399].map(x=>[x,480]),...[147,219,291,363].map(x=>[x,560])
+ ]);
+ assert.equal(bumpers.filter(p=>p.r===22).length,5);
  const races=[],winners=new Set();
- for(let seed=1;seed<=250;seed++){
+ for(let seed=1;seed<=racesPerCourse;seed++){
   const w=P.create(seed,family);assert(w.bumpers.every(b=>b.spring));
   for(let i=0;i<w.rails.length;i++)if(w.rails[i].kind==='funnel'){
    const a=w.rails[i],b=w.rails[++i],gap=Math.abs(a.x2-b.x2);assert.equal(b.kind,'funnel');assert.equal(a.y1,b.y1);assert.equal(a.y2,b.y2);
@@ -28,6 +36,7 @@ for(let family=0;family<3;family++){
   races.push({time:+w.podiumTime.toFixed(3),leadChanges:w.leadChanges});
  }
  assert.equal(winners.size,7);const times=races.map(r=>r.time).sort((a,b)=>a-b);
- report.push({family:P.families[family],races:races.length,min:times[0],median:times[125],max:times.at(-1),winners:[...winners],meanLeadChanges:+(races.reduce((n,r)=>n+r.leadChanges,0)/250).toFixed(2)});
+ report.push({family:P.families[family],races:races.length,min:times[0],median:(times[racesPerCourse/2-1]+times[racesPerCourse/2])/2,max:times.at(-1),winners:[...winners],meanLeadChanges:+(races.reduce((n,r)=>n+r.leadChanges,0)/racesPerCourse).toFixed(2)});
 }
+assert.equal(layouts.size,P.families.length);
 console.log(JSON.stringify(report,null,2));

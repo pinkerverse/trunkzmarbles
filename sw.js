@@ -1,5 +1,5 @@
 'use strict';
-const VERSION=16;
+const VERSION=17;
 const CACHE=`trunkz-marbles-v${VERSION}`;
 const ROOT=new URL('./',self.location.href);
 const SHELL=new URL(`./index.html?v=${VERSION}`,ROOT).href;

@@ -1,4 +1,4 @@
-# TRUNKZ Marbles · V16
+# TRUNKZ Marbles · V17
 
 A dependency-free, 9:16 marble-race recording tool for iPhone PWA and Instagram Reels. Only `pinkerverse/trunkzmarbles` is in scope. The seven original marble SVG designs remain unchanged.
 
@@ -14,11 +14,11 @@ The on-screen TRUNKZ MARBLES heading, 7 MARBLES / 1 WINNER caption and Tap a mar
 
 ## Simulation and layout
 
-The three course families use cleaner obstacle spacing, aligned 100-unit funnel mouths and extended ramps. Denser staggered peg fields and entry funnels keep marbles interacting with the pins. Redundant moving bars have been removed to reduce overlap. Physics uses a fixed 240 Hz timestep, real collisions, rolling spin and interpolated crossing times. Results are never awarded by a timer or by unfinished positions.
+Ten layouts combine different upper and lower sections. Race Again shuffles the order and cycles through all ten layouts before any repeat. The course sections use aligned 100-unit funnel mouths and extended ramps. Denser staggered peg fields and entry funnels keep marbles interacting with the pins. Redundant moving bars have been removed to reduce overlap. Physics uses a fixed 240 Hz timestep, real collisions, rolling spin and interpolated crossing times. Results are never awarded by a timer or by unfinished positions.
 
 Gravity is 500 world units/s². The model caps downward speed at 480 units/s, including after collisions, and bumper rebound at 250 units/s. The collision bounds account for the 7-unit side boundary stroke.
 
-The composition remains 9:16 and scales without cropping on tall phone screens. Audio unlocks on the Start tap. The PWA caches the V16 release for offline play. Worker updates reload only at an idle screen.
+The composition remains 9:16 and scales without cropping on tall phone screens. Audio unlocks on the Start tap. The PWA caches the V17 release for offline play. Worker updates reload only at an idle screen.
 
 ## Verification
 

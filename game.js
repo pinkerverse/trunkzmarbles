@@ -7,11 +7,25 @@ const keys=['sunny','pink','blue','lilac','red','orange','mint'];
 const sprites=keys.map(key=>{const im=new Image();im.src=`./assets/marble-${key}.svg`;return im;});
 let world,mode='loading',chosen=-1,camera=0,cameraTarget=0,goTime=0,countdown=0,lastBeat=0;
 let lastFrame=0,accumulator=0,audio=null,previousFamily=-1,raceNumber=0;
+const courseQueue=[];
 const status=s=>$('status').textContent=s;
 function setMode(next){mode=next;document.body.dataset.mode=next;$('start').disabled=!['ready','results'].includes(next);}
 function newRace(){
 const seed=crypto.getRandomValues(new Uint32Array(1))[0];
-const family=previousFamily<0?seed%3:(previousFamily+1+seed%2)%3;previousFamily=family;
+if(!courseQueue.length){
+ const random=P.rng(seed);
+ courseQueue.push(...P.families.keys());
+ for(let i=courseQueue.length-1;i>0;i--){
+  const j=Math.floor(random()*(i+1));
+  [courseQueue[i],courseQueue[j]]=[courseQueue[j],courseQueue[i]];
+ }
+ const last=courseQueue.length-1;
+ if(courseQueue[last]===previousFamily){
+  const j=Math.floor(random()*last);
+  [courseQueue[last],courseQueue[j]]=[courseQueue[j],courseQueue[last]];
+ }
+}
+const family=courseQueue.pop();previousFamily=family;
 world=P.create(seed,family);camera=0;cameraTarget=0;goTime=0;countdown=0;lastBeat=0;accumulator=0;raceNumber++;
 chosen=-1;$('start').textContent='START RACE';setMode('ready');status('Pick a marble. Which one will win?');
 $('picks').replaceChildren(...world.marbles.map(p=>{const b=document.createElement('button');b.style.left=`${(p.x+COURSE_OFFSET-27)/W*100}%`;b.style.top=`${(p.y-28)/H*100}%`;b.setAttribute('aria-label',`Pick ${p.name}`);b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>select(p.id));return b;}));
@@ -87,6 +101,6 @@ function resize(){const rect=canvas.getBoundingClientRect(),d=Math.min(devicePix
 function draw(){resize();ctx.setTransform(canvas.width/W,0,0,canvas.height/H,COURSE_OFFSET*canvas.width/W,0);clearScene();if(!world){text('LOADING MARBLES',255,440,25);return;}if(mode==='results')podium();else{course();if(mode==='ready'||mode==='countdown')ready();if(mode==='countdown')countdownArt();if(mode==='racing'&&goTime<.65)goArt();}}
 function frame(now){const delta=lastFrame?Math.min((now-lastFrame)/1000,.05):0;lastFrame=now;accumulator+=delta;while(accumulator>=P.DT){update(P.DT);accumulator-=P.DT;}draw();if(new URLSearchParams(location.search).has('qa'))canvas.dataset.race=JSON.stringify(window.TRUNKZ_DEBUG.state());requestAnimationFrame(frame);}
 $('start').addEventListener('click',start);document.addEventListener('visibilitychange',()=>{lastFrame=0;accumulator=0;});
-window.TRUNKZ_DEBUG={state:()=>({version:16,mode,seed:world?.seed,family:world?.family,raceNumber,chosen,time:world?.time,podiumTime:world?.podiumTime,allFinishedAt:world?.allFinishedAt,springHits:world?.springHits,gatePresent:mode==='ready'||mode==='countdown',countdown,numberBottom:228+78*1.08/2,marbleTop:world?Math.min(...world.marbles.map(p=>p.y-p.r)):null,catchY:CATCH,camera,leadChanges:world?.leadChanges,contacts:world?.contacts,pairContacts:world?.pairContacts,results:world?.finishers.map(p=>p.name),crossings:world?.crossings,positions:world?.marbles.map(p=>({name:p.name,x:p.x,y:p.y,angle:p.angle,contacts:p.contacts,pegHits:p.pegHits,finished:p.finished}))})};
+window.TRUNKZ_DEBUG={state:()=>({version:17,mode,seed:world?.seed,family:world?.family,raceNumber,chosen,time:world?.time,podiumTime:world?.podiumTime,allFinishedAt:world?.allFinishedAt,springHits:world?.springHits,gatePresent:mode==='ready'||mode==='countdown',countdown,numberBottom:228+78*1.08/2,marbleTop:world?Math.min(...world.marbles.map(p=>p.y-p.r)):null,catchY:CATCH,camera,leadChanges:world?.leadChanges,contacts:world?.contacts,pairContacts:world?.pairContacts,results:world?.finishers.map(p=>p.name),crossings:world?.crossings,positions:world?.marbles.map(p=>({name:p.name,x:p.x,y:p.y,angle:p.angle,contacts:p.contacts,pegHits:p.pegHits,finished:p.finished}))})};
 draw();Promise.all(sprites.map(im=>im.decode())).then(()=>{newRace();requestAnimationFrame(frame);}).catch(()=>{status('Could not load the marble artwork. Please reopen the app online.');$('start').disabled=true;$('start').textContent='REOPEN TO LOAD';});
 })();

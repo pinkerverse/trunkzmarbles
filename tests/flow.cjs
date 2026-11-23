@@ -15,7 +15,10 @@ function advance(sec){for(let i=0;i<Math.ceil(sec*60);i++){now+=1000/60;assert(n
 (async()=>{
  await new Promise(r=>setImmediate(r));advance(.1);const read=()=>context.window.TRUNKZ_DEBUG.state(),families=new Set(),winners=new Set();
  for(let n=0;n<30;n++){
-  assert.equal(read().mode,'ready');assert(read().gatePresent);const family=read().family;families.add(family);
+  assert.equal(read().mode,'ready');assert(read().gatePresent);const family=read().family;
+  assert(!families.has(family),'A course cannot repeat before the full rotation is played');
+  families.add(family);
+  if((n+1)%10===0){assert.equal(families.size,10);families.clear();}
   drawn.length=0;advance(.02);assert(drawn.includes('PICK A MARBLE'));assert(drawn.includes('Which one will win?'));assert(!drawn.some(s=>/TRUNKZ MARBLES|7 MARBLES|Tap a marble|IS YOUR PICK/.test(s)));
   const pick=n%7;elements.picks.children[pick].listeners.click();assert.equal(read().chosen,pick);assert.equal(elements.picks.children[pick].attrs['aria-pressed'],'true');
   const lineup=read().positions,queued=JSON.stringify(lineup);
@@ -39,5 +42,5 @@ function advance(sec){for(let i=0;i<Math.ceil(sec*60);i++){now+=1000/60;assert(n
   advance(2);assert.equal(read().time,stoppedTime);assert.equal(JSON.stringify(read().positions),frozen);assert.equal(read().mode,'results');
   elements.start.listeners.click();assert.equal(read().mode,'ready');assert.notEqual(read().family,family);assert.equal(read().chosen,-1);assert.equal(read().time,0);assert.equal(elements.start.textContent,'START RACE');
  }
- assert.equal(families.size,3);assert(winners.size>=5);console.log(`PASS: 30 full lifecycles; ${families.size} families; ${winners.size} winning colors; clear 3–2–1 above the fixed queue, GO release, third-crossing stop, frozen results and replay.`);
+ assert(winners.size>=5);console.log(`PASS: 30 full lifecycles; three shuffled rotations of ten courses; ${winners.size} winning colors; clear countdown, GO release, third-crossing stop, frozen results and replay.`);
 })().catch(e=>{console.error(e);process.exitCode=1;});

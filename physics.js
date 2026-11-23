@@ -3,11 +3,26 @@
 'use strict';
 const W=540,H=960,R=21,LEFT=43,RIGHT=467,FINISH=3620,CATCH=FINISH+136,WALL=7,GRAVITY=500,MAX_FALL=480,MAX_BOUNCE=250,DT=1/240;
 const names=['SUNNY','PINK','BLUE','LILAC','RED','ORANGE','MINT'];
-const families=['Switchback Springs','Pinball Parade','Rolling Rivals'];
+// Each course pairs an upper section with a lower section.
+const courses=[
+ ['Switchback Springs',0,0],
+ ['Pinball Parade',1,1],
+ ['Rolling Rivals',2,2],
+ ['Switchback Parade',0,1],
+ ['Switchback Roll',0,2],
+ ['Parade Springs',1,0],
+ ['Pinball Switchbacks',1,2],
+ ['Rolling Springs',2,0],
+ ['Rolling Pinball',2,1],
+ ['Double Seesaw',1,3]
+];
+const families=courses.map(([name])=>name);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rng(seed){return ()=>{let t=seed+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;};}
 function create(seed,family){
- const random=rng(seed),range=(a,b)=>a+(b-a)*random();family=family===undefined?Math.floor(random()*3):family;
+ const random=rng(seed),range=(a,b)=>a+(b-a)*random();
+ family=family??Math.floor(random()*courses.length);
+ const [,upper,lower]=courses[family];
  const rails=[],rotors=[],bumpers=[];
  const line=(x1,y1,x2,y2,kind='ramp')=>rails.push({x1,y1,x2,y2,thickness:10,kind});
  const rotor=(x,y,l,s,type='spinner')=>rotors.push({x,y,l,s:s*range(.92,1.08),a:range(-Math.PI,Math.PI),phase:range(0,Math.PI*2),thickness:10,type});
@@ -29,29 +44,36 @@ function create(seed,family){
  // The full-width gate disappears on GO, releasing all seven from the same height.
  const gate={x1:LEFT,y1:336,x2:RIGHT,y2:336,thickness:8};
  const places=[93,147,201,255,309,363,417];
- if(family===0){
+ if(upper===0){
   funnel(255,735,100,96);rotor(255,890,150,.85,'shutter');
   line(LEFT,1055,383,1152);pins(1400);
+ }else if(upper===1){
+  funnel(255,735,100,100);rotor(255,1000,200,1.3,'seesaw');
+  pins(1400);
+ }else{
+  funnel(255,735,100,92);pins(1010,false);
+  rotor(255,1320,200,1.15,'seesaw');
+  line(LEFT,1485,205,1540);line(RIGHT,1485,305,1540);
+ }
+ if(lower===0){
   funnel(255,1700,100,96);rotor(255,1840,135,1.3,'pendulum');
   line(127,2190,RIGHT,2080);funnel(255,2350,100,92);
   largePins(2530);
   line(LEFT,2700,205,2752);line(RIGHT,2700,305,2752);
- }else if(family===1){
-  // Collect first, then rock the pack. The later fork has a real central entry.
-  funnel(255,735,100,100);rotor(255,1000,200,1.3,'seesaw');
-  pins(1400);funnel(255,1690,100,90);
+ }else if(lower===1){
+  funnel(255,1690,100,90);
   line(255,1880,140,2000);line(255,1880,370,2000);
   line(LEFT,2140,205,2200);line(RIGHT,2140,305,2200);
   rotor(255,2340,180,-1.45);funnel(255,2520,100,90);
   largePins(2730);
- }else{
-  // The funnel is the pegboard entry; omit the old gate squeezed between them.
-  funnel(255,735,100,92);pins(1010,false);
-  rotor(255,1320,200,1.15,'seesaw');
-  line(LEFT,1485,205,1540);line(RIGHT,1485,305,1540);
+ }else if(lower===2){
   funnel(280,1690,100,92);rotor(255,1910,132,1.4,'pendulum');
   line(LEFT,2135,383,2220);line(127,2445,RIGHT,2345);
   funnel(255,2590,100,90);largePins(2740);
+ }else{
+  funnel(255,1700,100,90);rotor(255,1930,180,1.45,'seesaw');
+  line(LEFT,2110,378,2210);line(160,2380,RIGHT,2280);
+  funnel(255,2480,100,85);largePins(2640);
  }
  line(127,2990,RIGHT,2880);
  pins(3210,true,2);
